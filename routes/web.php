@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -23,6 +24,7 @@ Route::middleware(['auth', 'role:super-admin'])
     ->name('dashboard.')
     ->group(function () {
         Route::resource('users', UserController::class);
+        Route::resource('categories', CategoryController::class);
 });
 
 require __DIR__.'/auth.php';
