@@ -72,7 +72,7 @@
 
     <!-- Category Document -->
     <li class="nav-item">
-        <a class="nav-link" href="charts.html">
+        <a class="nav-link" href="{{ route('dashboard.categories.index') }}">
             <i class="fas fa-folder-open"></i>
             <span>Category Document</span>
         </a>
@@ -85,7 +85,7 @@
             <span>Users</span>
         </a>
     </li>
-    
+
     <!-- Divider -->
     <hr class="sidebar-divider d-none d-md-block" />
     @endrole
