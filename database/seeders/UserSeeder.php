@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\User;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
@@ -73,7 +73,7 @@ class UserSeeder extends Seeder
             'name' => 'Defri Pratama',
             'email' => 'defri.pratama@gorbyputrautama.com',
             'password' => Hash::make('@Gorby2025'),
-            'jabatan' => 'Dept. Head Hauling', 
+            'jabatan' => 'Dept. Head Hauling',
         ]);
         $defri->assignRole('sr-staff-haul');
 
