@@ -21,7 +21,7 @@ class CategoryController extends Controller
      */
     public function create()
     {
-        //
+        return view('dashboard.categories.create');
     }
 
     /**
@@ -29,7 +29,17 @@ class CategoryController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'string|max:255'
+        ]);
+
+        Category::create([
+            'name' => $request->name,
+            'description' => $request->description
+        ]);
+
+        return redirect()->route('dashboard.categories.index')->with('success', 'User berhasil ditambahkan!');
     }
 
     /**

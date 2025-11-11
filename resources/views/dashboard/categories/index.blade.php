@@ -19,6 +19,12 @@
         </a>
     </div>
 
+    @if (session('success'))
+    <div class="alert alert-success">
+        {{ session("success") }}
+    </div>
+    @endif
+
     <!-- DataTable -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
