@@ -40,9 +40,18 @@
                             <th>Nama Kategori</th>
                             <th>Deskripsi</th>
                             <th>Dibuat Pada</th>
-                            <th>Aksi</th>
+                            <th>##</th>
                         </tr>
                     </thead>
+                    <tfoot>
+                        <tr>
+                            <th>#</th>
+                            <th>Nama Kategori</th>
+                            <th>Deskripsi</th>
+                            <th>Dibuat Pada</th>
+                            <th>##</th>
+                        </tr>
+                    </tfoot>
                     <tbody>
                         @forelse ($categories as $category)
                             <tr>
