@@ -13,8 +13,7 @@
 
     @include('dashboard.components.link')
 
-    <!-- Custom styles for this page -->
-    <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+    @stack('css')
 
 </head>
 
@@ -83,6 +82,8 @@
     <!-- Start All Script -->
     @include('dashboard.components.script')
     <!-- End All Script -->
+
+    @stack('js')
 
 
 </body>

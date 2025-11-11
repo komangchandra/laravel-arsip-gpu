@@ -66,6 +66,8 @@
 
     <hr class="sidebar-divider" />
 
+    @role('super-admin')
+
     <div class="sidebar-heading">Menu Super Admin</div>
 
     <!-- Category Document -->
@@ -78,14 +80,15 @@
 
     <!-- Users -->
     <li class="nav-item">
-        <a class="nav-link" href="tables.html">
+        <a class="nav-link" href="{{ route('dashboard.users.index') }}">
             <i class="fas fa-users-cog"></i>
             <span>Users</span>
         </a>
     </li>
-
+    
     <!-- Divider -->
     <hr class="sidebar-divider d-none d-md-block" />
+    @endrole
 
     <!-- Sidebar Toggler (Sidebar) -->
     <div class="text-center d-none d-md-inline">
