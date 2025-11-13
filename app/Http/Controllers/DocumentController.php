@@ -12,7 +12,8 @@ class DocumentController extends Controller
      */
     public function index()
     {
-        //
+        $documents = Document::with(['creator', 'checker'])->get();
+        return view('dashboard.documents.index', compact('documents'));
     }
 
     /**

@@ -52,7 +52,7 @@
         >
             <div class="bg-white py-2 collapse-inner rounded">
                 <h6 class="collapse-header">Berita Acara:</h6>
-                <a class="collapse-item" href="buttons.html">
+                <a class="collapse-item" href="{{ route('dashboard.documents.index') }}">
                     <i class="fas fa-truck-moving"></i>
                     BA Hauling
                 </a>
