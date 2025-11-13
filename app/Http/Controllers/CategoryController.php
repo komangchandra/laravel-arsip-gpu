@@ -39,7 +39,7 @@ class CategoryController extends Controller
             'description' => $request->description
         ]);
 
-        return redirect()->route('dashboard.categories.index')->with('success', 'User berhasil ditambahkan!');
+        return redirect()->route('dashboard.categories.index')->with('success', 'Kategori berhasil ditambahkan!');
     }
 
     /**
@@ -55,7 +55,7 @@ class CategoryController extends Controller
      */
     public function edit(Category $category)
     {
-        //
+        return view('dashboard.categories.edit', compact('category'));
     }
 
     /**
@@ -63,7 +63,17 @@ class CategoryController extends Controller
      */
     public function update(Request $request, Category $category)
     {
-        //
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'string|max:255'
+        ]);
+
+        $category->update([
+            'name' => $request->name,
+            'description' => $request->description
+        ]);
+
+        return redirect()->route('dashboard.categories.index')->with('success', 'Kategori berhasil diupdate!');
     }
 
     /**
@@ -71,7 +81,7 @@ class CategoryController extends Controller
      */
     public function destroy(Category $category)
     {
-        $category->delete();
-        return redirect()->route('dashboard.categories.index')->with('success', 'User berhasil dihapus.');
+        // $category->delete();
+        // return redirect()->route('dashboard.categories.index')->with('success', 'Kategori berhasil dihapus.');
     }
 }
