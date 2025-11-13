@@ -25,6 +25,7 @@ return new class extends Migration
             ])->default('uploaded');
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
             $table->foreignId('checked_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('category_id')->nullable()->constrained('categories')->nullOnDelete();
             $table->timestamps();
         });
     }

@@ -32,7 +32,7 @@
 
     <!-- Nav Item - Pages Collapse Menu -->
     <!-- Berita Acara -->
-    <li class="nav-item">
+    <!-- <li class="nav-item">
         <a
             class="nav-link collapsed"
             href="#"
@@ -62,16 +62,30 @@
                 </a>
             </div>
         </div>
+    </li> -->
+
+    <li class="nav-item {{ Request::routeIs('dashboard.documents*') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('dashboard.documents.index') }}">
+            <i class="fas fa-file-alt"></i>
+            <span>All BA</span>
+        </a>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link" href="#">
+            <i class="fas fa-file-archive"></i>
+            <span>Arsip Dokumen</span>
+        </a>
     </li>
 
     <hr class="sidebar-divider" />
 
     @role('super-admin')
 
-    <div class="sidebar-heading">Menu Super Admin</div>
+    <div class="sidebar-heading">Menu Admin</div>
 
     <!-- Category Document -->
-    <li class="nav-item">
+    <li class="nav-item {{ Request::routeIs('dashboard.categories*') ? 'active' : '' }}">
         <a class="nav-link" href="{{ route('dashboard.categories.index') }}">
             <i class="fas fa-folder-open"></i>
             <span>Category Document</span>
@@ -79,7 +93,7 @@
     </li>
 
     <!-- Users -->
-    <li class="nav-item">
+    <li class="nav-item {{ Request::routeIs('dashboard.users*') ? 'active' : '' }}">
         <a class="nav-link" href="{{ route('dashboard.users.index') }}">
             <i class="fas fa-users-cog"></i>
             <span>Users</span>

@@ -19,4 +19,10 @@ class Document extends Model
     {
         return $this->belongsTo(User::class, 'checked_by');
     }
+
+    // Category of the document
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 }
