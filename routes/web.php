@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DocumentApprovalController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
@@ -36,6 +37,8 @@ Route::middleware('auth')
     ->group(function () {
         // Document Routes
         Route::resource('documents', DocumentController::class);
+        // Document Approval Routes
+        Route::resource('documents-approvals', DocumentApprovalController::class);
 });
 
 require __DIR__.'/auth.php';

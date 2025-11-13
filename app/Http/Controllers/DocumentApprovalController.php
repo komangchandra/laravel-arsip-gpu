@@ -12,7 +12,8 @@ class DocumentApprovalController extends Controller
      */
     public function index()
     {
-        //
+        $documentApprovals = DocumentApproval::with(['document', 'user'])->get();
+        return view('dashboard.document_approvals.index', compact('documentApprovals'));
     }
 
     /**

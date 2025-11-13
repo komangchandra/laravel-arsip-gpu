@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Document;
-use App\Models\User;
+use App\Models\DocumentApproval;
+use Spatie\Permission\Models\Role;
+// use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -48,6 +50,24 @@ class DocumentController extends Controller
         $document->created_by = auth()->id();
         $document->category_id = $validated['category_id'] ?? null;
         $document->save();
+
+        $roles = [
+            'staff-haul',
+            'staff',
+            'sr-staff-haul',
+            'sr-staff',
+            'ktt',
+            'manager',
+        ];
+
+        foreach ($roles as $roleName) {
+            DocumentApproval::create([
+                'document_id' => $document->id,
+                'user_id' => Role::where('name', $roleName)->first()->users()->first()->id,
+                'role_name' => $roleName,
+                'status' => 'pending',
+            ]);
+        }
 
         return redirect()->route('dashboard.documents.index')->with('success', 'Document uploaded successfully.');
     }

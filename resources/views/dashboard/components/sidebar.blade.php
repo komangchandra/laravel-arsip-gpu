@@ -71,6 +71,13 @@
         </a>
     </li>
 
+    <li class="nav-item {{ Request::routeIs('dashboard.documents-approvals*') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('dashboard.documents-approvals.index') }}">
+            <i class="fas fa-check-double"></i>
+            <span>BA Approvals</span>
+        </a>
+    </li>
+
     <li class="nav-item">
         <a class="nav-link" href="#">
             <i class="fas fa-file-archive"></i>
