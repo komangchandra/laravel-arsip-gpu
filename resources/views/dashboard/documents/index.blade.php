@@ -98,7 +98,7 @@
                                 'signed' => 'success', 'archived' => 'dark', ];
                                 @endphp
                                 <span
-                                    class="badge bg-{{ $colors[$document->status] ?? 'secondary' }}"
+                                    class="badge bg-{{ $colors[$document->status] ?? 'secondary' }} text-white"
                                 >
                                     {{ ucfirst(str_replace('_', ' ', $document->status)) }}
                                 </span>
