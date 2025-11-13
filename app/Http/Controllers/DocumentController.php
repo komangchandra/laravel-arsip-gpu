@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Document;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ class DocumentController extends Controller
      */
     public function index()
     {
-        $documents = Document::with(['creator', 'checker'])->get();
+        $documents = Document::with(['creator', 'checker', 'category'])->get();
         return view('dashboard.documents.index', compact('documents'));
     }
 
@@ -23,7 +24,8 @@ class DocumentController extends Controller
      */
     public function create()
     {
-        return view('dashboard.documents.create');
+        $categories = Category::all();
+        return view('dashboard.documents.create', compact('categories'));
     }
 
     /**
@@ -34,6 +36,7 @@ class DocumentController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'file_path' => 'required|file|mimes:pdf,doc,docx',
+            'category_id' => 'nullable|exists:categories,id',
         ]);
 
         $path = $request->file('file_path')->store('documents', 'public');
@@ -43,6 +46,7 @@ class DocumentController extends Controller
         $document->file_path = $path;
         $document->status = 'uploaded';
         $document->created_by = auth()->id();
+        $document->category_id = $validated['category_id'] ?? null;
         $document->save();
 
         return redirect()->route('dashboard.documents.index')->with('success', 'Document uploaded successfully.');
@@ -61,7 +65,8 @@ class DocumentController extends Controller
      */
     public function edit(Document $document)
     {
-        return view('dashboard.documents.edit', compact('document'));
+        $categories = Category::all();
+        return view('dashboard.documents.edit', compact(['document', 'categories']));
     }
 
     /**
@@ -72,6 +77,7 @@ class DocumentController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'file_path' => 'nullable|file|mimes:pdf,doc,docx',
+            'category_id' => 'nullable|exists:categories,id',
             'status' => 'required|in:uploaded,checked,in_approval,signed,archived',
         ]);
 

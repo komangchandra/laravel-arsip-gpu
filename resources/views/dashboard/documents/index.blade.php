@@ -17,13 +17,19 @@
             /
             <span>Documents</span>
         </h1>
-        <a
-            href="{{ route('dashboard.documents.create') }}"
-            class="btn btn-primary btn-sm shadow-sm"
-        >
-            <i class="fas fa-plus fa-sm text-white-50"></i> Tambah Dokumen
+        <a href="{{ route('dashboard.documents.create') }}" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-plus fa-sm text-white-50"></i>
+            </span>
+            <span class="text">Tambah Dokumen</span>
         </a>
     </div>
+
+    @if (session('success'))
+    <div class="alert alert-success">
+        {{ session("success") }}
+    </div>
+    @endif
 
     <!-- DataTales Example -->
     <div class="card shadow mb-4">
@@ -45,6 +51,7 @@
                         <tr>
                             <th>#</th>
                             <th>Judul</th>
+                            <th>Kategori</th>
                             <th>File Asli</th>
                             <th>File TTD</th>
                             <th>Status</th>
@@ -57,6 +64,7 @@
                         <tr>
                             <th>#</th>
                             <th>Judul</th>
+                            <th>Kategori</th>
                             <th>File Asli</th>
                             <th>File TTD</th>
                             <th>Status</th>
@@ -70,6 +78,7 @@
                         <tr>
                             <td>{{ $loop->iteration }}</td>
                             <td>{{ $document->title }}</td>
+                            <td>{{ $document->category->name }}</td>
                             <td>
                                 <a
                                     href="{{ asset('storage/' . $document->file_path) }}"

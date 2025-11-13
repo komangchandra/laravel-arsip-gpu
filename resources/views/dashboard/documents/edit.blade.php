@@ -37,6 +37,35 @@
                     @enderror
                 </div>
 
+                {{-- Category Document --}}
+                <div class="form-group mb-3">
+                    <label for="category_id">
+                        Kategori Dokumen <span class="text-danger">*</span>
+                    </label>
+                    <select
+                        class="custom-select form-select @error('category_id') is-invalid @enderror"
+                        id="category_id"
+                        name="category_id"
+                        required
+                    >
+                        <option disabled value="">
+                            Pilih Kategori..
+                        </option>
+                        @foreach($categories as $category)
+                            <option
+                                value="{{ $category->id }}"
+                                {{ old('category_id', $document->category_id ?? '') == $category->id ? 'selected' : '' }}
+                            >
+                                {{ $category->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('category_id')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+
                 <div class="form-group mb-3">
                     <label for="file_path" class="form-label"
                         >Ganti File (Opsional)</label
@@ -67,7 +96,7 @@
                         >Status Dokumen</label
                     >
                     <select
-                        class="form-control @error('status') is-invalid @enderror"
+                        class="custom-select form-control @error('status') is-invalid @enderror"
                         id="status"
                         name="status"
                     >
@@ -94,14 +123,17 @@
                 </div>
 
                 <div class="text-end">
-                    <a
-                        href="{{ route('dashboard.documents.index') }}"
-                        class="btn btn-secondary"
-                    >
-                        Batal
+                    <a href="{{ route('dashboard.documents.index') }}" class="btn btn-secondary btn-icon-split">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-arrow-left"></i>
+                        </span>
+                        <span class="text">Batal</span>
                     </a>
-                    <button type="submit" class="btn btn-primary">
-                        Simpan Perubahan
+                    <button type="submit" class="btn btn-primary btn-icon-split">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-save"></i>
+                        </span>
+                        <span class="text">Simpan Perubahan</span>
                     </button>
                 </div>
             </form>

@@ -51,6 +51,34 @@
                     @enderror
                 </div>
 
+                {{-- Category Document --}}
+                <div class="form-group mb-3">
+                    <label for="category_id"
+                        >Kategori Dokumen
+                        <span class="text-danger">*</span></label
+                    >
+                    <select
+                        class="custom-select form-control @error('category_id') is-invalid @enderror"
+                        id="category_id"
+                        name="category_id"
+                        value="{{ old('category_id') }}"
+                        placeholder="Masukkan judul dokumen"
+                        required
+                    >
+                        <option selected disabled value="">
+                            Pilih Category..
+                        </option>
+                        @foreach($categories as $category)
+                        <option value="{{ $category->id }}">
+                            {{ $category->name }}
+                        </option>
+                        @endforeach
+                    </select>
+                    @error('category_id')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
                 {{-- File Dokumen --}}
                 <div class="form-group mb-3">
                     <label for="file_path"
@@ -73,15 +101,24 @@
                 </div>
 
                 {{-- Tombol Aksi --}}
-                <div class="d-flex justify-content-between">
+                <div>
                     <a
                         href="{{ route('dashboard.documents.index') }}"
-                        class="btn btn-secondary"
+                        class="btn btn-secondary btn-icon-split"
                     >
-                        <i class="fas fa-arrow-left"></i> Kembali
+                        <span class="icon text-white-50">
+                            <i class="fas fa-arrow-left"></i>
+                        </span>
+                        <span class="text">Kembali</span>
                     </a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Simpan Dokumen
+                    <button
+                        type="submit"
+                        class="btn btn-primary btn-icon-split"
+                    >
+                        <span class="icon text-white-50">
+                            <i class="fas fa-save"></i>
+                        </span>
+                        <span class="text">Simpan Dokumen</span>
                     </button>
                 </div>
             </form>
