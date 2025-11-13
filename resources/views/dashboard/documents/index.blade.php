@@ -106,12 +106,25 @@
                             <td>{{ $document->creator->name ?? '-' }}</td>
                             <td>{{ $document->checker->name ?? '-' }}</td>
                             <td>
+                                <!-- Tombol Sign -->
+                                @role(['super-admin', 'manager', 'ktt',
+                                'sr-staff', 'sr-staff-haul'])
+                                <a href="#" class="btn btn-sm btn-warning"
+                                    >Sign</a
+                                >
+                                @endrole
+
+                                <!-- Tombol edit -->
+                                @role(['super-admin', 'staff', 'staff-haul'])
                                 <a
                                     href="{{ route('dashboard.documents.edit', $document->id) }}"
                                     class="btn btn-sm btn-warning"
                                     >Edit</a
                                 >
+                                @endrole
 
+                                <!-- Tombol delete -->
+                                @role('super-admin')
                                 <form
                                     action="{{ route('dashboard.documents.destroy', $document->id) }}"
                                     method="POST"
@@ -125,6 +138,7 @@
                                         Hapus
                                     </button>
                                 </form>
+                                @endrole
                             </td>
                         </tr>
                         @empty
