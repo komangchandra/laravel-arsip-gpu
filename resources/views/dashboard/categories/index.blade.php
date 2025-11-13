@@ -14,8 +14,11 @@
             <span>Categories</span>
         </h1>
 
-        <a href="{{ route('dashboard.categories.create') }}" class="btn btn-primary btn-sm">
-            <i class="fas fa-plus"></i> Tambah Kategori
+        <a href="{{ route('dashboard.categories.create') }}" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-plus fa-sm text-white-50"></i>
+            </span>
+            <span class="text">Tambah Category</span>
         </a>
     </div>
 

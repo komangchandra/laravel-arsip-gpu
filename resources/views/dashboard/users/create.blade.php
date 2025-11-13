@@ -14,13 +14,6 @@
 
     <!-- Card -->
     <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">Tambah User Baru</h6>
-            <a href="{{ route('dashboard.users.index') }}" class="btn btn-secondary btn-sm">
-                <i class="fas fa-arrow-left"></i> Kembali
-            </a>
-        </div>
-
         <div class="card-body">
             @if ($errors->any())
                 <div class="alert alert-danger">
@@ -69,12 +62,18 @@
                 </div>
 
                 <div class="mt-4">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Simpan User
-                    </button>
-                    <a href="{{ route('dashboard.users.index') }}" class="btn btn-light border">
-                        Batal
+                    <a href="{{ route('dashboard.users.index') }}" class="btn btn-secondary btn-icon-split">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-arrow-left"></i>
+                        </span>
+                        <span class="text">Batal</span>
                     </a>
+                    <button type="submit" class="btn btn-primary btn-icon-split" >
+                        <span class="icon text-white-50">
+                            <i class="fas fa-save"></i>
+                        </span>
+                        <span class="text">Simpan User</span>
+                    </button>
                 </div>
             </form>
         </div>

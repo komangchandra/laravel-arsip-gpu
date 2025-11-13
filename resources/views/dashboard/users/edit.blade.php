@@ -10,10 +10,6 @@
             <a href="{{ route('dashboard.users.index') }}" class="text-decoration-none">Users</a> /
             <span>Edit User</span>
         </h1>
-
-        <a href="{{ route('dashboard.users.index') }}" class="btn btn-secondary btn-sm">
-            <i class="fas fa-arrow-left"></i> Kembali
-        </a>
     </div>
 
     <!-- Card -->
@@ -75,12 +71,18 @@
                 </div>
 
                 <div class="mt-4">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Update User
-                    </button>
-                    <a href="{{ route('dashboard.users.index') }}" class="btn btn-light border">
-                        Batal
+                    <a href="{{ route('dashboard.users.index') }}" class="btn btn-secondary btn-icon-split">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-arrow-left"></i>
+                        </span>
+                        <span class="text">Batal</span>
                     </a>
+                    <button type="submit" class="btn btn-primary btn-icon-split">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-save"></i>
+                        </span>
+                        <span class="text">Update User</span>
+                    </button>
                 </div>
             </form>
         </div>
