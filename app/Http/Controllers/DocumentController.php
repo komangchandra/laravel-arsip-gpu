@@ -61,7 +61,7 @@ class DocumentController extends Controller
      */
     public function edit(Document $document)
     {
-        //
+        return view('dashboard.documents.edit', compact('document'));
     }
 
     /**
@@ -69,7 +69,29 @@ class DocumentController extends Controller
      */
     public function update(Request $request, Document $document)
     {
-        //
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'file_path' => 'nullable|file|mimes:pdf,doc,docx',
+            'status' => 'required|in:uploaded,checked,in_approval,signed,archived',
+        ]);
+
+        // Update file jika ada file baru
+        if ($request->hasFile('file_path')) {
+            if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
+                Storage::disk('public')->delete($document->file_path);
+            }
+            $validated['file_path'] = $request->file('file_path')->store('documents', 'public');
+        } else {
+            $validated['file_path'] = $document->file_path;
+        }
+
+        $validated['checked_by'] = auth()->id();
+
+        $document->update($validated);
+
+        return redirect()
+            ->route('dashboard.documents.index')
+            ->with('success', 'Document updated successfully.');
     }
 
     /**
