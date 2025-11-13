@@ -106,12 +106,32 @@
                             <td>{{ $document->creator->name ?? '-' }}</td>
                             <td>{{ $document->checker->name ?? '-' }}</td>
                             <td>
+                                <!-- Tombol Lihar -->
+                                @role(['super-admin', 'director'])
+                                <!-- Jika ada dan tidak ada file -->
+                                @if ($document->file_signed_path)
+                                <a
+                                    href="{{ asset('storage/' . $document->file_signed_path) }}"
+                                    target="_blank"
+                                    class="text-decoration-none"
+                                >
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                @else
+                                <span class="text-muted">
+                                    <i
+                                        class="fas fa-eye-slash text-muted me-2"
+                                        title="Belum Ada Dokumen"
+                                    ></i
+                                ></span>
+                                @endif @endrole
+
                                 <!-- Tombol Sign -->
                                 @role(['super-admin', 'manager', 'ktt',
                                 'sr-staff', 'sr-staff-haul'])
-                                <a href="#" class="btn btn-sm btn-warning"
-                                    >Sign</a
-                                >
+                                <a href="#" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-pen"></i>
+                                </a>
                                 @endrole
 
                                 <!-- Tombol edit -->
@@ -119,8 +139,8 @@
                                 <a
                                     href="{{ route('dashboard.documents.edit', $document->id) }}"
                                     class="btn btn-sm btn-warning"
-                                    >Edit</a
-                                >
+                                    ><i class="fas fa-edit"></i
+                                ></a>
                                 @endrole
 
                                 <!-- Tombol delete -->
@@ -135,7 +155,7 @@
                                         type="button"
                                         class="btn btn-sm btn-danger btn-delete"
                                     >
-                                        Hapus
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
                                 @endrole
