@@ -11,14 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('document_approvals', function (Blueprint $table) {
+        Schema::create('document_checkeds', function (Blueprint $table) {
             $table->id();
             $table->foreignId('document_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('role_name');
-            $table->enum('status', ['pending', 'signed', 'rejected'])->default('pending');
-            $table->timestamp('signed_at')->nullable();
-            $table->text('notes')->nullable();
             $table->timestamps();
         });
     }
@@ -28,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('document_approvals');
+        Schema::dropIfExists('document_checkeds');
     }
 };

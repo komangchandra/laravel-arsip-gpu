@@ -1,25 +1,22 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
+use App\Models\Document;
 use Illuminate\Http\Request;
 
-class DocumentHaulingController extends Controller
+use function Pest\Laravel\json;
+
+class DocumentController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        $documents = Document::with('category')->get();
+        return response()->json($documents);
     }
 
     /**
@@ -34,14 +31,6 @@ class DocumentHaulingController extends Controller
      * Display the specified resource.
      */
     public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
     {
         //
     }

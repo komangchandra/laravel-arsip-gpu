@@ -16,15 +16,8 @@ return new class extends Migration
             $table->string('title');
             $table->text('file_path');
             $table->string('file_signed_path')->nullable();
-            $table->enum('status', [
-                'uploaded',
-                'checked',
-                'in_approval',
-                'signed',
-                'archived'
-            ])->default('uploaded');
+            $table->string('status')->default('uploaded');
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('checked_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('category_id')->nullable()->constrained('categories')->nullOnDelete();
             $table->timestamps();
         });

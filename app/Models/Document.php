@@ -15,9 +15,14 @@ class Document extends Model
     }
 
     // User who checked the document
-    public function checker()
+    public function checkedBy()
     {
-        return $this->belongsTo(User::class, 'checked_by');
+        return $this->belongsToMany(User::class, 'document_checkeds');
+    }
+
+    public function signedBy()
+    {
+        return $this->belongsToMany(User::class, 'document_signeds');
     }
 
     // Category of the document
