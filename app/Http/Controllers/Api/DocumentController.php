@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Document;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 use function Pest\Laravel\json;
 
@@ -20,34 +21,39 @@ class DocumentController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Document $document)
     {
-        //
+        $disk = 'public';
+
+        if (!$document->file_path || !Storage::disk($disk)->exists($document->file_path)) {
+            return response()->json(['message' => 'File tidak ditemukan.'], 404);
+        }
+        
+        $path = Storage::disk($disk)->path($document->file_path);
+
+        return response()->file($path, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . basename($document->file_path) . '"'
+        ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Sign document.
      */
-    public function update(Request $request, string $id)
+    public function sign(Document $document, Request $request)
     {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        $user = $request->user();
+        $document->update([
+            'status' => 'Signed',
+            'signed_by_user_id' => $user->id, 
+            'signed_at' => now(), 
+        ]);
+        
+        return response()->json([
+            'message' => 'Dokumen berhasil ditandatangani.', 
+            'document' => $document->fresh()
+        ]);
     }
 }

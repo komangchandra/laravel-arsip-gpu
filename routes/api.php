@@ -16,5 +16,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']); 
     Route::get('/documents', [DocumentController::class, 'index']);
+    Route::get('/documents/{document}/show', [DocumentController::class, 'show']);
     // ... Route API Anda yang lain
 });
+
+// Route::middleware('auth:sanctum')->post('/documents/{document}/sign', [DocumentController::class, 'sign']);
+// Route::middleware('auth:sanctum')->get('/documents/{document}/show', [DocumentController::class, 'view']);

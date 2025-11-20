@@ -37,8 +37,8 @@ Route::middleware('auth')
     ->group(function () {
         // Document Routes
         Route::resource('documents', DocumentController::class);
-        // Document Approval Routes
-        Route::resource('documents-approvals', DocumentApprovalController::class);
+        // // Document Approval Routes
+        // Route::resource('documents-approvals', DocumentApprovalController::class);
 });
 
 require __DIR__.'/auth.php';
