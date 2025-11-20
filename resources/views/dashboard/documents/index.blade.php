@@ -81,10 +81,10 @@
                                 @php 
                                     $colors = [
                                         'uploaded' => 'secondary',
-                                        'checked' => 'info',
-                                        'in_approval' => 'warning',
+                                        'needs_revision' => 'danger',
+                                        'approved' => 'info',
                                         'signed' => 'success',
-                                        'archived' => 'dark',
+                                        'archived' => 'primary',
                                     ];
                                 @endphp
 

@@ -4,10 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Document;
-use App\Models\DocumentApproval;
-use Spatie\Permission\Models\Role;
-// use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class DocumentController extends Controller
@@ -17,7 +15,7 @@ class DocumentController extends Controller
      */
     public function index()
     {
-        $documents = Document::with(['creator', 'checker', 'category'])->get();
+        $documents = Document::with(['creator', 'category'])->get();
         return view('dashboard.documents.index', compact('documents'));
     }
 
@@ -47,27 +45,9 @@ class DocumentController extends Controller
         $document->title = $validated['title'];
         $document->file_path = $path;
         $document->status = 'uploaded';
-        $document->created_by = auth()->id();
+        $document->created_by = Auth::id();
         $document->category_id = $validated['category_id'] ?? null;
         $document->save();
-
-        $roles = [
-            'staff-haul',
-            'staff',
-            'sr-staff-haul',
-            'sr-staff',
-            'ktt',
-            'manager',
-        ];
-
-        foreach ($roles as $roleName) {
-            DocumentApproval::create([
-                'document_id' => $document->id,
-                'user_id' => Role::where('name', $roleName)->first()->users()->first()->id,
-                'role_name' => $roleName,
-                'status' => 'pending',
-            ]);
-        }
 
         return redirect()->route('dashboard.documents.index')->with('success', 'Document uploaded successfully.');
     }
@@ -98,7 +78,7 @@ class DocumentController extends Controller
             'title' => 'required|string|max:255',
             'file_path' => 'nullable|file|mimes:pdf,doc,docx',
             'category_id' => 'nullable|exists:categories,id',
-            'status' => 'required|in:uploaded,checked,in_approval,signed,archived',
+            'status' => 'required',
         ]);
 
         // Update file jika ada file baru
@@ -106,19 +86,28 @@ class DocumentController extends Controller
             if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
                 Storage::disk('public')->delete($document->file_path);
             }
+
             $validated['file_path'] = $request->file('file_path')->store('documents', 'public');
         } else {
             $validated['file_path'] = $document->file_path;
         }
 
-        $validated['checked_by'] = auth()->id();
+        // Update document (tanpa checked_by)
+        $document->update([
+            'title' => $validated['title'],
+            'file_path' => $validated['file_path'],
+            'category_id' => $validated['category_id'] ?? $document->category_id,
+            'status' => $validated['status'],
+        ]);
 
-        $document->update($validated);
+        // Tambahkan user ke pivot checked_by
+        $document->checkedBy()->syncWithoutDetaching([Auth::id()]);
 
         return redirect()
             ->route('dashboard.documents.index')
             ->with('success', 'Document updated successfully.');
     }
+
 
     /**
      * Remove the specified resource from storage.

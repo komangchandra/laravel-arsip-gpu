@@ -92,29 +92,22 @@
                 </div>
 
                 <div class="form-group mb-3">
-                    <label for="status" class="form-label"
-                        >Status Dokumen</label
-                    >
-                    <select
-                        class="custom-select form-control @error('status') is-invalid @enderror"
-                        id="status"
-                        name="status"
-                    >
-                        <option value="uploaded" {{ $document->
-                            status == 'uploaded' ? 'selected' : '' }}>Uploaded
+                    <label for="status" class="form-label">Status Dokumen</label>
+                    <select class="custom-select form-control @error('status') is-invalid @enderror" id="status" name="status">
+                        <option value="uploaded" {{ $document->status == 'uploaded' ? 'selected' : '' }}>
+                            Uploaded
                         </option>
-                        <option value="checked" {{ $document->
-                            status == 'checked' ? 'selected' : '' }}>Checked
+                        <option value="needs_revision" {{ $document->status == 'needs_revision' ? 'selected' : '' }}>
+                            Need Revision
                         </option>
-                        <option value="in_approval" {{ $document->
-                            status == 'in_approval' ? 'selected' : '' }}>In
-                            Approval
+                        <option value="approved" {{ $document->status == 'approved' ? 'selected' : '' }}>
+                            Approved
                         </option>
-                        <option value="signed" {{ $document->
-                            status == 'signed' ? 'selected' : '' }}>Signed
+                        <option value="signed" {{ $document->status == 'signed' ? 'selected' : '' }}>
+                            Signed
                         </option>
-                        <option value="archived" {{ $document->
-                            status == 'archived' ? 'selected' : '' }}>Archived
+                        <option value="archived" {{ $document->status == 'archived' ? 'selected' : '' }}>
+                            Archived
                         </option>
                     </select>
                     @error('status')

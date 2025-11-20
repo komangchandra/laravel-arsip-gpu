@@ -15,7 +15,7 @@ class DocumentController extends Controller
      */
     public function index()
     {
-        $documents = Document::with('category')->get();
+        $documents = Document::where('status', 'approved')->get();
         return response()->json($documents);
     }
 
