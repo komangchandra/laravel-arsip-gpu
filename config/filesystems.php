@@ -60,6 +60,20 @@ return [
             'report' => false,
         ],
 
+        'signatures' => [
+            'driver' => 'local',
+            'root' => storage_path('app/signatures'),
+            'url' => env('APP_URL').'/storage/signatures',
+            'visibility' => 'public',
+        ],
+        
+        'signeds' => [
+            'driver' => 'local',
+            'root' => storage_path('app/signeds'),
+            'url' => env('APP_URL').'/storage/signeds',
+            'visibility' => 'public',
+        ],
+
     ],
 
     /*

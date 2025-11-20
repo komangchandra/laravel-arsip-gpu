@@ -132,7 +132,7 @@
 
                                 <!-- Tombol Sign -->
                                 @role(['super-admin', 'manager', 'ktt', 'sr-staff', 'sr-staff-haul'])
-                                    <a href="#" class="btn btn-sm btn-primary">
+                                    <a href="{{ route('dashboard.documents.sign', $document->id) }}" class="btn btn-sm btn-primary">
                                         <i class="fas fa-pen"></i>
                                     </a>
                                 @endrole

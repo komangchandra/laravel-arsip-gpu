@@ -37,8 +37,16 @@ Route::middleware('auth')
     ->group(function () {
         // Document Routes
         Route::resource('documents', DocumentController::class);
-        // // Document Approval Routes
-        // Route::resource('documents-approvals', DocumentApprovalController::class);
+        Route::get('documents/{document}/sign', [DocumentController::class, 'sign'])
+            ->name('documents.sign');
+
+        Route::post('documents/{document}/sign', [DocumentController::class, 'signStore'])
+            ->name('documents.sign.store');
 });
+
+// Route::get('/test-image', function () {
+//     return \Intervention\Image\Laravel\Facades\Image::canvas(200, 200, '#ff0000')->toPngResponse();
+// });
+
 
 require __DIR__.'/auth.php';

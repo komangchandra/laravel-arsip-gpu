@@ -7,6 +7,9 @@ use App\Models\Document;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Intervention\Image\ImageManager;
+use setasign\Fpdi\Fpdi;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class DocumentController extends Controller
 {
@@ -122,4 +125,89 @@ class DocumentController extends Controller
 
         return redirect()->route('dashboard.documents.index')->with('success', 'Document deleted successfully.');
     }
+
+    public function sign(Document $document)
+    {
+        return view('dashboard.documents.sign', compact('document'));
+    }
+
+    public function signStore(Request $request, $id)
+    {
+        $document = Document::findOrFail($id);
+
+        // Signed pages (array page => base64PNG)
+        $signedPages = json_decode($request->signed_pages, true);
+
+        // Original PDF
+        $originalPdfPath = storage_path('app/public/' . $document->file_path);
+
+        // Output PDF
+        $newFilePath = 'documents/signed_' . time() . '.pdf';
+        $outputPdfPath = storage_path('app/public/' . $newFilePath);
+
+        // Start FPDI
+        $pdf = new Fpdi();
+        $pageCount = $pdf->setSourceFile($originalPdfPath);
+
+        for ($page = 1; $page <= $pageCount; $page++) {
+
+            $tpl = $pdf->importPage($page);
+            $size = $pdf->getTemplateSize($tpl);
+
+            $orientation = $size['width'] > $size['height'] ? 'L' : 'P';
+            $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+            $pdf->useTemplate($tpl, 0, 0, $size['width'], $size['height']);
+
+            if (isset($signedPages[$page])) {
+
+                // Decode base64 PNG
+                $imgData = str_replace('data:image/png;base64,', '', $signedPages[$page]);
+                $imgData = base64_decode($imgData);
+
+                // Temp file
+                $tmpImg = storage_path("app/temp_sign_{$page}.png");
+                file_put_contents($tmpImg, $imgData);
+
+                // Render ke PDF
+                $pdf->Image(
+                    $tmpImg,
+                    0,
+                    0,
+                    $size['width'],
+                    $size['height']
+                );
+
+                unlink($tmpImg);
+            }
+        }
+
+        // Simpan PDF final
+        $pdf->Output($outputPdfPath, 'F');
+
+        // ================================
+        // HAPUS FILE LAMA
+        // ================================
+        if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
+            Storage::disk('public')->delete($document->file_path);
+        }
+
+        // ================================
+        // UPDATE PATH DI TABLE DOCUMENTS
+        // ================================
+        $document->update([
+            'file_path' => $newFilePath,
+            'status' => 'signed'
+        ]);
+
+        // ================================
+        // PIVOT — insert siapa yang tanda tangan
+        // ================================
+        $document->signedBy()->attach(Auth::id());
+
+        return redirect()
+            ->route('dashboard.documents.index')
+            ->with('success', 'Document signed successfully.');
+    }
+
+
 }
