@@ -36,12 +36,17 @@ Route::middleware('auth')
     ->group(function () {
         // Document Routes
         Route::resource('documents', DocumentController::class);
+
+        // Sign
         Route::get('documents/{document}/sign', [DocumentController::class, 'sign'])
             ->name('documents.sign');
-
         Route::post('documents/{document}/sign', [DocumentController::class, 'signStore'])
             ->name('documents.sign.store');
         Route::resource('archiveds', ArchiveController::class);
+
+        // Stamp
+        Route::get('documents/{document}/stamp', [DocumentController::class, 'stamp'])
+            ->name('documents.stamp');
 });
 
 require __DIR__.'/auth.php';

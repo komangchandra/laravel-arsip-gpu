@@ -123,6 +123,11 @@
                                     <i class="fas fa-eye"></i>
                                 </a>
 
+                                <!-- Tombol stampel -->
+                                <a href="{{ route('dashboard.documents.stamp', $document->id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-stamp"></i>
+                                </a>
+
                                 <!-- Tombol Sign -->
                                 @role(['super-admin', 'manager', 'ktt', 'sr-staff', 'sr-staff-haul'])
                                     <a href="{{ route('dashboard.documents.sign', $document->id) }}" class="btn btn-sm btn-primary">

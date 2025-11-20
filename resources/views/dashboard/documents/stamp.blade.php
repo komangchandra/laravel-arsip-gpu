@@ -37,6 +37,26 @@
     gap:0.5rem;
     align-items:center;
 }
+
+.stamp {
+    position: absolute;
+    width: 120px;
+    cursor: move;
+    z-index: 20;
+    user-select: none;
+}
+
+.stamp.selected {
+    outline: 2px dashed red;
+}
+
+#stampContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 15;
+}
+
 @media (max-width: 768px) {
     #pageContainer { zoom: 0.9; } /* optional responsive tweak */
 }
@@ -44,7 +64,7 @@
 @endpush
 
 <div class="container-fluid">
-    <h1 class="h3 mb-4 text-gray-800">Sign Document: {{ $document->title }}</h1>
+    <h1 class="h3 mb-4 text-gray-800">Stampel Document: {{ $document->title }}</h1>
 
     <div class="toolbar mb-3">
         <div class="group">
@@ -72,6 +92,20 @@
             </button>
             <button type="button" class="btn btn-danger" id="clear">
                 <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
+        <div class="group">
+            <button type="button" class="btn btn-primary btn-icon-split" id="addStampGpu">
+                <span class="icon text-white-50">
+                    <i class="fas fa-stamp"></i>
+                </span>
+                <span class="text">GPU</span>
+            </button>
+            <button type="button" class="btn btn-primary btn-icon-split" id="addStampGe">
+                <span class="icon text-white-50">
+                    <i class="fas fa-stamp"></i>
+                </span>
+                <span class="text">GE</span>
             </button>
         </div>
     </div>

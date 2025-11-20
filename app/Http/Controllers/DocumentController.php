@@ -209,5 +209,13 @@ class DocumentController extends Controller
             ->with('success', 'Document signed successfully.');
     }
 
+    public function stamp(Document $document)
+    {
+        return view('dashboard.documents.stamp', compact('document'));
+    }
 
+    public function stampStore(Request $request, $id)
+    {
+        //Belum
+    }
 }
