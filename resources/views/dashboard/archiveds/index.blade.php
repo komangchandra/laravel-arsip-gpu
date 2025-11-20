@@ -15,14 +15,8 @@
                 >Dashboard</a
             >
             /
-            <span>Documents</span>
+            <span>Arsip Dokumen</span>
         </h1>
-        <a href="{{ route('dashboard.documents.create') }}" class="btn btn-primary btn-icon-split">
-            <span class="icon text-white-50">
-                <i class="fas fa-plus fa-sm text-white-50"></i>
-            </span>
-            <span class="text">Tambah Dokumen</span>
-        </a>
     </div>
 
     @if (session('success'))
@@ -48,9 +42,8 @@
                             <th>Judul</th>
                             <th>Kategori</th>
                             <th>Status</th>
-                            <th>Dibuat Oleh</th>
-                            <th>Dicek Oleh</th>
-                            <th>Sign By</th>
+                            <th>Tanggal Upload</th>
+                            <th>Tanggal Finish</th>
                             <th>##</th>
                         </tr>
                     </thead>
@@ -61,9 +54,8 @@
                             <th>Judul</th>
                             <th>Kategori</th>
                             <th>Status</th>
-                            <th>Dibuat Oleh</th>
-                            <th>Dicek Oleh</th>
-                            <th>Sign By</th>
+                            <th>Tanggal Upload</th>
+                            <th>Tanggal Finish</th>
                             <th>##</th>
                         </tr>
                     </tfoot>
@@ -92,51 +84,13 @@
                                     {{ ucfirst(str_replace('_', ' ', $document->status)) }}
                                 </span>
                             </td>
-
-                            <td>{{ $document->creator->name ?? '-' }}</td>
-
-                            <!-- Dicek oleh (many to many) -->
-                            <td>
-                                @if ($document->checkedBy->count())
-                                    @foreach ($document->checkedBy as $user)
-                                        <span class="badge bg-info text-white">{{ $user->name }}</span><br>
-                                    @endforeach
-                                @else
-                                    <span class="text-muted">Belum dicek</span>
-                                @endif
-                            </td>
-
-                            <!-- Ditandatangani oleh (many to many) -->
-                            <td>
-                                @if ($document->signedBy->count())
-                                    @foreach ($document->signedBy as $user)
-                                        <span class="badge bg-success text-white">{{ $user->name }}</span><br>
-                                    @endforeach
-                                @else
-                                    <span class="text-muted">Belum disign</span>
-                                @endif
-                            </td>
-
+                            <td>{{ $document->created_at }}</td>
+                            <td>{{ $document->updated_at }}</td>
                             <td>
                                 <!-- Tombol lihat file signed -->
                                 <a href="{{ asset('storage/' . $document->file_path) }}" target="_blank" class="btn btn-sm btn-info">
                                     <i class="fas fa-eye"></i>
                                 </a>
-
-                                <!-- Tombol Sign -->
-                                @role(['super-admin', 'manager', 'ktt', 'sr-staff', 'sr-staff-haul'])
-                                    <a href="{{ route('dashboard.documents.sign', $document->id) }}" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-pen"></i>
-                                    </a>
-                                @endrole
-
-                                <!-- Tombol edit -->
-                                @role(['super-admin', 'staff', 'staff-haul'])
-                                    <a href="{{ route('dashboard.documents.edit', $document->id) }}" 
-                                    class="btn btn-sm btn-warning">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                @endrole
 
                                 <!-- Tombol delete -->
                                 @role('super-admin')

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DocumentApprovalController;
 use App\Http\Controllers\DocumentController;
@@ -42,11 +43,7 @@ Route::middleware('auth')
 
         Route::post('documents/{document}/sign', [DocumentController::class, 'signStore'])
             ->name('documents.sign.store');
+        Route::resource('archiveds', ArchiveController::class);
 });
-
-// Route::get('/test-image', function () {
-//     return \Intervention\Image\Laravel\Facades\Image::canvas(200, 200, '#ff0000')->toPngResponse();
-// });
-
 
 require __DIR__.'/auth.php';

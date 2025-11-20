@@ -18,7 +18,7 @@ class DocumentController extends Controller
      */
     public function index()
     {
-        $documents = Document::with(['creator', 'category'])->get();
+        $documents = Document::with(['creator', 'category'])->where('status', '!=', 'archived')->get();
         return view('dashboard.documents.index', compact('documents'));
     }
 

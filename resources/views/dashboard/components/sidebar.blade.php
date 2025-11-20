@@ -71,8 +71,8 @@
         </a>
     </li>
 
-    <li class="nav-item">
-        <a class="nav-link" href="#">
+    <li class="nav-item {{ Request::routeIs('dashboard.archiveds*') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('dashboard.archiveds.index') }}">
             <i class="fas fa-file-archive"></i>
             <span>Arsip Dokumen</span>
         </a>
