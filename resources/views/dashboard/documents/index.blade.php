@@ -17,12 +17,20 @@
             /
             <span>Documents</span>
         </h1>
-        <a href="{{ route('dashboard.documents.create') }}" class="btn btn-primary btn-icon-split">
+        @php
+            $disabledRoles = ['director', 'manager', 'ktt'];
+            $isDisabled = auth()->user() && auth()->user()->hasAnyRole($disabledRoles);
+        @endphp
+
+        <a href="{{ $isDisabled ? '#' : route('dashboard.documents.create') }}"
+        class="btn btn-primary btn-icon-split {{ $isDisabled ? 'disabled' : '' }}"
+        {{ $isDisabled ? 'aria-disabled=true tabindex=-1' : '' }}>
             <span class="icon text-white-50">
                 <i class="fas fa-plus fa-sm text-white-50"></i>
             </span>
             <span class="text">Tambah Dokumen</span>
         </a>
+
     </div>
 
     @if (session('success'))

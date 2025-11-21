@@ -51,4 +51,12 @@ Route::middleware('auth')
             ->name('documents.stamp.store');
 });
 
+// Staff Route
+Route::middleware(['auth', 'role:super-admin|staff|staff-haul'])
+    ->prefix('dashboard')
+    ->name('dashboard.')
+    ->group(function () {
+        Route::get('documents/create', [DocumentController::class, 'create'])->name('documents.create');
+});
+
 require __DIR__.'/auth.php';
