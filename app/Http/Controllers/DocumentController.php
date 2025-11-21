@@ -216,6 +216,53 @@ class DocumentController extends Controller
 
     public function stampStore(Request $request, $id)
     {
-        //Belum
+        $document = Document::findOrFail($id);
+
+        $stampsData = json_decode($request->stamps, true);
+        if (!$stampsData) {
+            return back()->with('error', 'Tidak ada stampel untuk disimpan.');
+        }
+
+        $original = storage_path('app/public/' . $document->file_path);
+
+        $pdf = new \setasign\Fpdi\Fpdi();
+        $pageCount = $pdf->setSourceFile($original);
+
+        for ($page = 1; $page <= $pageCount; $page++) {
+            $tpl = $pdf->importPage($page);
+            $size = $pdf->getTemplateSize($tpl);
+
+            $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+            $pdf->useTemplate($tpl);
+
+            // Jika ada stempel di halaman ini
+            if (isset($stampsData[$page])) {
+                foreach ($stampsData[$page] as $s) {
+                    $type = $s['type']; // "gpu" atau "ge"
+                    $stampPath = public_path("images/stampel-$type.png");
+                    if (!file_exists($stampPath)) continue;
+
+                    // Konversi koordinat relatif ke PDF asli
+                    $x = $s['x_ratio'] * $size['width'];
+                    $y = $s['y_ratio'] * $size['height'];
+                    $w = $s['width_ratio'] * $size['width'];
+                    $h = $s['height_ratio'] * $size['height'];
+
+                    $pdf->Image($stampPath, $x, $y, $w, $h, '', '', '', false, 300, '', false, false, 0, $s['rotation']);
+                }
+            }
+        }
+
+        // timpa file lama
+        $pdf->Output('F', storage_path('app/public/' . $document->file_path));
+
+        $document->update([
+            'status' => 'stamped'
+        ]);
+
+        return redirect()->route('dashboard.documents.index')
+            ->with('success', 'Stamp diterapkan.');
     }
+
+
 }

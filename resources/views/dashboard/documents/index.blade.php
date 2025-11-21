@@ -124,9 +124,11 @@
                                 </a>
 
                                 <!-- Tombol stampel -->
+                                @role(['super-admin', 'staff'])
                                 <a href="{{ route('dashboard.documents.stamp', $document->id) }}" class="btn btn-sm btn-primary">
                                     <i class="fas fa-stamp"></i>
                                 </a>
+                                @endrole
 
                                 <!-- Tombol Sign -->
                                 @role(['super-admin', 'manager', 'ktt', 'sr-staff', 'sr-staff-haul'])

@@ -7,23 +7,82 @@
 /* Container & canvas */
 #pageContainer {
     position: relative;
-    display: inline-block; /* agar ukuran canvas tidak stretch lebar container */
+    display: inline-block;
     text-align: left;
     margin-bottom: 20px;
 }
-#pdfCanvas, #drawCanvas {
+
+/* pdf canvas */
+#pdfCanvas {
     display: block;
     border: 1px solid #e0e0e0;
     box-shadow: 0 0 0 1px rgba(0,0,0,0.02);
 }
-/* drawCanvas berada di atas pdfCanvas */
-#drawCanvas {
+
+/* stamp container sits above pdf canvas */
+#stampContainer {
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 10;
-    cursor: crosshair;
+    z-index: 30;
+    pointer-events: none; /* container itself doesn't block events */
 }
+
+/* each stamp wrapper */
+.stamp-wrap {
+    position: absolute;
+    transform-origin: top left; /* we manage rotation around top-left then adjust */
+    pointer-events: auto;
+    z-index: 40;
+}
+
+/* image inside wrapper */
+.stamp-wrap img.stamp-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none; /* image doesn't catch mouse (wrapper does) */
+}
+
+/* outline when selected */
+.stamp-wrap.selected {
+    outline: 2px dashed red;
+}
+
+/* handles */
+.handle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border: 2px solid #007bff;
+    border-radius: 3px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    z-index: 60;
+}
+
+/* bottom-right resize handle */
+.handle.resize {
+    right: -10px;
+    bottom: -10px;
+    cursor: nwse-resize;
+}
+
+/* top rotate handle */
+.handle.rotate {
+    left: 50%;
+    transform: translateX(-50%);
+    top: -26px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #28a745;
+    cursor: grab;
+}
+
 /* toolbar */
 .toolbar {
     margin-bottom: 15px;
@@ -38,27 +97,9 @@
     align-items:center;
 }
 
-.stamp {
-    position: absolute;
-    width: 120px;
-    cursor: move;
-    z-index: 20;
-    user-select: none;
-}
-
-.stamp.selected {
-    outline: 2px dashed red;
-}
-
-#stampContainer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 15;
-}
-
+/* responsive tweak */
 @media (max-width: 768px) {
-    #pageContainer { zoom: 0.9; } /* optional responsive tweak */
+    #pageContainer { zoom: 0.9; }
 }
 </style>
 @endpush
@@ -68,327 +109,440 @@
 
     <div class="toolbar mb-3">
         <div class="group">
-            <button type="button" class="btn btn-primary" id="prevPage">
-                <i class="fas fa-arrow-left"></i>
-            </button>
+            <button type="button" class="btn btn-primary" id="prevPage"><i class="fas fa-arrow-left"></i></button>
             <span class="mx-2">Page: <strong><span id="pageNum">1</span> / <span id="pageCount">0</span></strong></span>
-            <button type="button" class="btn btn-primary" id="nextPage">
-                <i class="fas fa-arrow-right"></i>
-            </button>
+            <button type="button" class="btn btn-primary" id="nextPage"><i class="fas fa-arrow-right"></i></button>
         </div>
 
         <div class="group">
-            <button type="button" class="btn btn-secondary" id="zoomIn">
-                <i class="fas fa-search-plus"></i>
-            </button>
-            <button type="button" class="btn btn-secondary" id="zoomOut">
-                <i class="fas fa-search-minus"></i>
-            </button>
+            <button type="button" class="btn btn-secondary" id="zoomIn"><i class="fas fa-search-plus"></i></button>
+            <button type="button" class="btn btn-secondary" id="zoomOut"><i class="fas fa-search-minus"></i></button>
         </div>
 
         <div class="group">
-            <button type="button" class="btn btn-warning" id="undo">
-                <i class="fas fa-undo"></i>
-            </button>
-            <button type="button" class="btn btn-danger" id="clear">
-                <i class="fas fa-trash-alt"></i>
-            </button>
+            <button type="button" class="btn btn-danger" id="deleteSelected"><i class="fas fa-trash-alt"></i></button>
+            <button type="button" class="btn btn-outline-secondary" id="clearAll"><i class="fas fa-ban"></i></button>
         </div>
-        <div class="group">
-            <button type="button" class="btn btn-primary btn-icon-split" id="addStampGpu">
-                <span class="icon text-white-50">
-                    <i class="fas fa-stamp"></i>
-                </span>
-                <span class="text">GPU</span>
+
+        <div class="group ms-2">
+            <button type="button" class="btn btn-info btn-icon-split" id="addStampGpu">
+                <span class="icon text-white-50"><i class="fas fa-stamp"></i></span>
+                <span class="text">Stampel GPU</span>
             </button>
-            <button type="button" class="btn btn-primary btn-icon-split" id="addStampGe">
-                <span class="icon text-white-50">
-                    <i class="fas fa-stamp"></i>
-                </span>
-                <span class="text">GE</span>
+
+            <button type="button" class="btn btn-info btn-icon-split" id="addStampGe">
+                <span class="icon text-white-50"><i class="fas fa-stamp"></i></span>
+                <span class="text">Stampel GE</span>
             </button>
         </div>
     </div>
 
     <div id="pageContainer">
         <canvas id="pdfCanvas"></canvas>
-        <canvas id="drawCanvas"></canvas>
+        <div id="stampContainer"></div>
     </div>
 
-    <form id="saveForm" method="POST" action="{{ route('dashboard.documents.sign.store', $document->id) }}">
+    <form id="stampForm" method="POST" action="{{ route('dashboard.documents.stamp.store', $document->id) }}">
         @csrf
-        <input type="hidden" name="signed_pages" id="signedPages">
         <a href="{{ route('dashboard.documents.index') }}" class="btn btn-secondary btn-icon-split my-3">
-            <span class="icon text-white-50">
-                <i class="fas fa-arrow-left"></i>
-            </span>
+            <span class="icon text-white-50"><i class="fas fa-arrow-left"></i></span>
             <span class="text">Kembali</span>
         </a>
-        <button type="submit" class="btn btn-success btn-icon-split my-3">
-            <span class="icon text-white-50">
-                <i class="fas fa-save"></i>
-            </span>
-            <span class="text">Simpan Dokumen</span>
+        <button type="submit" class="btn btn-success btn-icon-split my-3" id="saveBtn">
+            <span class="icon text-white-50"><i class="fas fa-save"></i></span>
+            <span class="text">Simpan Stampel</span>
         </button>
     </form>
 </div>
 
 @push('js')
-<!-- PDF.js (stable version) -->
+<!-- PDF.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <script>
-    // set worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 </script>
 
 <script>
 (() => {
+    // ----- CONFIG: use your public images paths -----
+    const STAMP_GPU = "{{ asset('images/stampel-gpu.png') }}"; // 320x108 px (you provided)
+    const STAMP_GE  = "{{ asset('images/stampel-ge.png') }}";  // 268x72 px  (you provided)
+
     const url = "{{ asset('storage/' . $document->file_path) }}";
+    const pdfCanvas = document.getElementById('pdfCanvas');
+    const pdfCtx = pdfCanvas.getContext('2d');
+    const stampContainer = document.getElementById('stampContainer');
 
     let pdfDoc = null;
     let pageNum = 1;
     let pageCount = 0;
     let scale = 1.0;
 
-    const pdfCanvas = document.getElementById('pdfCanvas');
-    const pdfCtx = pdfCanvas.getContext('2d');
+    // stamps: { pageNumber: [ {id,type,x,y,w,h,rotation} ] }
+    let stamps = {};
+    let idCounter = 1;
+    let activeWrapper = null;
 
-    const drawCanvas = document.getElementById('drawCanvas');
-    const drawCtx = drawCanvas.getContext('2d');
-
-    let isDrawing = false;
-    let lastX = 0, lastY = 0;
-
-    // store drawings per page: drawings[page] = array of paths; each path = [{x,y}, ...]
-    let drawings = {};
-    // store original viewport sizes per page for robust scaling if needed
-    let pageViewports = {};
-
-    // default drawing style
-    function setupDrawStyle() {
-        drawCtx.lineWidth = 2;
-        drawCtx.strokeStyle = "#000";
-        drawCtx.lineCap = "round";
-        drawCtx.lineJoin = "round";
-    }
-
-    // Initialize draw style
-    setupDrawStyle();
-
-    // Load PDF
+    // load PDF
     pdfjsLib.getDocument(url).promise.then(pdf => {
         pdfDoc = pdf;
         pageCount = pdf.numPages;
         document.getElementById('pageCount').textContent = pageCount;
         renderPage(pageNum);
-    }).catch(err => {
-        console.error("PDF load error:", err);
-        alert("Gagal memuat dokumen. Cek URL file atau permission storage.");
+    }).catch(err=>{
+        console.error('PDF load error', err);
+        alert('Gagal memuat dokumen. Cek URL file atau permission storage.');
     });
 
-    // Render page and draw existing strokes for that page
-    function renderPage(num) {
-        pdfDoc.getPage(num).then(page => {
+    function renderPage(n) {
+        pdfDoc.getPage(n).then(page => {
             const viewport = page.getViewport({ scale });
-            pageViewports[num] = { width: viewport.width, height: viewport.height, scale };
-
-            // resize canvases to exact PDF pixel size
             pdfCanvas.width = Math.round(viewport.width);
             pdfCanvas.height = Math.round(viewport.height);
+            pdfCanvas.style.width = pdfCanvas.width + 'px';
+            pdfCanvas.style.height = pdfCanvas.height + 'px';
 
-            drawCanvas.width = Math.round(viewport.width);
-            drawCanvas.height = Math.round(viewport.height);
+            // size and position stamp container to match canvas
+            stampContainer.style.width  = pdfCanvas.width + 'px';
+            stampContainer.style.height = pdfCanvas.height + 'px';
+            stampContainer.style.left = pdfCanvas.offsetLeft + 'px';
+            stampContainer.style.top  = pdfCanvas.offsetTop + 'px';
 
-            // ensure canvases display as same size blocks (avoid CSS stretching)
-            pdfCanvas.style.width = pdfCanvas.width + "px";
-            pdfCanvas.style.height = pdfCanvas.height + "px";
-            drawCanvas.style.width = drawCanvas.width + "px";
-            drawCanvas.style.height = drawCanvas.height + "px";
-
-            // render PDF page
-            page.render({ canvasContext: pdfCtx, viewport }).promise.then(() => {
-                // after PDF rendered, redraw existing strokes (if any)
-                drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-                setupDrawStyle();
-
-                if (drawings[num]) {
-                    drawings[num].forEach(path => {
-                        if (!path || !path.length) return;
-                        drawCtx.beginPath();
-                        drawCtx.moveTo(path[0].x, path[0].y);
-                        for (let i = 1; i < path.length; i++) {
-                            drawCtx.lineTo(path[i].x, path[i].y);
-                        }
-                        drawCtx.stroke();
-                    });
-                }
-
+            page.render({ canvasContext: pdfCtx, viewport }).promise.then(()=> {
                 document.getElementById('pageNum').textContent = pageNum;
-            }).catch(err => {
-                console.error("Render error:", err);
+                refreshStampsForPage();
             });
         });
     }
 
-    // Convert client coords to canvas coords (account bounding rect)
-    function clientToCanvas(e) {
-        const rect = drawCanvas.getBoundingClientRect();
-        const clientX = (e.touches ? e.touches[0].clientX : e.clientX);
-        const clientY = (e.touches ? e.touches[0].clientY : e.clientY);
-        const x = clientX - rect.left;
-        const y = clientY - rect.top;
-        return { x, y };
+    // utilities
+    function ensurePageArray(p) {
+        if (!stamps[p]) stamps[p] = [];
     }
 
-    // Start drawing
-    function startDraw(e) {
+    // create wrapper DOM for a stamp object
+    function createStampWrapper(stObj) {
+        const wrap = document.createElement('div');
+        wrap.className = 'stamp-wrap';
+        wrap.style.left = stObj.x + 'px';
+        wrap.style.top  = stObj.y + 'px';
+        wrap.style.width = stObj.w + 'px';
+        wrap.style.height = stObj.h + 'px';
+        wrap.dataset.id = stObj.id;
+        wrap.dataset.page = stObj.page;
+        wrap.style.transform = `rotate(${stObj.rotation || 0}deg)`;
+
+        // image
+        const img = document.createElement('img');
+        img.className = 'stamp-img';
+        img.draggable = false;
+        img.src = stObj.type === 'gpu' ? STAMP_GPU : STAMP_GE;
+        wrap.appendChild(img);
+
+        // rotate handle (top center)
+        const rotateHandle = document.createElement('div');
+        rotateHandle.className = 'handle rotate';
+        wrap.appendChild(rotateHandle);
+
+        // resize handle (bottom-right)
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'handle resize';
+        wrap.appendChild(resizeHandle);
+
+        // events
+        wrap.addEventListener('mousedown', wrapMouseDown);
+        wrap.addEventListener('dblclick', () => { removeStampById(stObj.page, stObj.id); });
+
+        // handles events
+        resizeHandle.addEventListener('mousedown', resizeMouseDown);
+        rotateHandle.addEventListener('mousedown', rotateMouseDown);
+
+        return wrap;
+    }
+
+    function refreshStampsForPage() {
+        // clear container
+        stampContainer.innerHTML = '';
+        ensurePageArray(pageNum);
+        stamps[pageNum].forEach(s => {
+            const wrap = createStampWrapper(s);
+            stampContainer.appendChild(wrap);
+        });
+    }
+    function addStamp(type) {
+        ensurePageArray(pageNum);
+        const defaultW = Math.min(160, Math.round(pdfCanvas.width * 0.25));
+        const aspect = (type==='gpu') ? (108/320) : (72/268);
+        const defaultH = Math.round(defaultW * aspect);
+
+        const stObj = {
+            id: 's' + (Date.now()) + '_' + (idCounter++),
+            page: pageNum,
+            type,
+            x: Math.max(10, Math.round((pdfCanvas.width - defaultW) / 2)),
+            y: Math.max(10, Math.round((pdfCanvas.height - defaultH) / 2)),
+            w: defaultW,
+            h: defaultH,
+            rotation: 0
+        };
+
+        stamps[pageNum].push(stObj);
+        refreshStampsForPage();
+        selectStampById(stObj.id);
+    }
+    document.getElementById('addStampGpu').addEventListener('click', () => addStamp('gpu'));
+    document.getElementById('addStampGe').addEventListener('click', () => addStamp('ge'));
+    function deselectAll() {
+        document.querySelectorAll('.stamp-wrap').forEach(el => el.classList.remove('selected'));
+        activeWrapper = null;
+    }
+    function selectStampById(id) {
+        deselectAll();
+        const el = stampContainer.querySelector(`.stamp-wrap[data-id="${id}"]`);
+        if (el) {
+            el.classList.add('selected');
+            activeWrapper = el;
+        }
+    }
+    let dragState = null;
+    function wrapMouseDown(e) {
+        if (e.target.classList.contains('handle')) return;
+
         e.preventDefault();
-        const pos = clientToCanvas(e);
-        isDrawing = true;
-        lastX = pos.x;
-        lastY = pos.y;
+        const wrap = e.currentTarget;
+        selectStampById(wrap.dataset.id);
 
-        if (!drawings[pageNum]) drawings[pageNum] = [];
-        drawings[pageNum].push([{ x: lastX, y: lastY }]);
+        const startRect = wrap.getBoundingClientRect();
+        const containerRect = stampContainer.getBoundingClientRect();
+
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const origLeft = parseFloat(wrap.style.left);
+        const origTop  = parseFloat(wrap.style.top);
+
+        dragState = { wrap, startX, startY, origLeft, origTop, containerRect };
+
+        window.addEventListener('mousemove', wrapDragging);
+        window.addEventListener('mouseup', wrapDragEnd);
     }
-
-    // Continue drawing
-    function moveDraw(e) {
-        if (!isDrawing) return;
+    function wrapDragging(e) {
+        if (!dragState) return;
         e.preventDefault();
-        const pos = clientToCanvas(e);
-        const x = pos.x, y = pos.y;
+        const { wrap, startX, startY, origLeft, origTop, containerRect } = dragState;
+        let dx = e.clientX - startX;
+        let dy = e.clientY - startY;
+        let newLeft = origLeft + dx;
+        let newTop  = origTop + dy;
 
-        const currentPath = drawings[pageNum][drawings[pageNum].length - 1];
-        currentPath.push({ x, y });
+        // clamp
+        newLeft = Math.max(0, Math.min(newLeft, containerRect.width - wrap.offsetWidth));
+        newTop  = Math.max(0, Math.min(newTop, containerRect.height - wrap.offsetHeight));
 
-        drawCtx.beginPath();
-        drawCtx.moveTo(lastX, lastY);
-        drawCtx.lineTo(x, y);
-        drawCtx.stroke();
+        wrap.style.left = newLeft + 'px';
+        wrap.style.top  = newTop + 'px';
 
-        lastX = x;
-        lastY = y;
+        updateStampModel(wrap);
     }
-
-    // Stop drawing
-    function stopDraw(e) {
-        if (!isDrawing) return;
-        e && e.preventDefault();
-        isDrawing = false;
+    function wrapDragEnd() {
+        window.removeEventListener('mousemove', wrapDragging);
+        window.removeEventListener('mouseup', wrapDragEnd);
+        dragState = null;
     }
+    let resizeState = null;
+    function resizeMouseDown(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        const handle = e.currentTarget;
+        const wrap = handle.parentElement;
+        selectStampById(wrap.dataset.id);
 
-    // Mouse events
-    drawCanvas.addEventListener('mousedown', startDraw);
-    drawCanvas.addEventListener('mousemove', moveDraw);
-    window.addEventListener('mouseup', stopDraw);
+        const startRect = wrap.getBoundingClientRect();
+        const containerRect = stampContainer.getBoundingClientRect();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const origW = startRect.width;
+        const origH = startRect.height;
+        const origLeft = parseFloat(wrap.style.left);
+        const origTop  = parseFloat(wrap.style.top);
 
-    // Touch events (mobile)
-    drawCanvas.addEventListener('touchstart', startDraw, { passive:false });
-    drawCanvas.addEventListener('touchmove', moveDraw, { passive:false });
-    window.addEventListener('touchend', stopDraw);
+        resizeState = { wrap, startX, startY, origW, origH, origLeft, origTop, containerRect };
 
-    // Toolbar handlers
+        window.addEventListener('mousemove', resizing);
+        window.addEventListener('mouseup', resizeEnd);
+    }
+    function resizing(e) {
+        if (!resizeState) return;
+        e.preventDefault();
+        const { wrap, startX, startY, origW, origH, origLeft, origTop, containerRect } = resizeState;
+        let dx = e.clientX - startX;
+        let dy = e.clientY - startY;
+
+        let newW = Math.max(30, origW + dx);
+        let newH = Math.max(30, origH + dy);
+
+        // clamp to container bounds
+        newW = Math.min(newW, containerRect.width - origLeft);
+        newH = Math.min(newH, containerRect.height - origTop);
+
+        wrap.style.width = newW + 'px';
+        wrap.style.height = newH + 'px';
+
+        updateStampModel(wrap);
+    }
+    function resizeEnd() {
+        window.removeEventListener('mousemove', resizing);
+        window.removeEventListener('mouseup', resizeEnd);
+        resizeState = null;
+    }
+    let rotateState = null;
+    function rotateMouseDown(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        const handle = e.currentTarget;
+        const wrap = handle.parentElement;
+        selectStampById(wrap.dataset.id);
+
+        const rect = wrap.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        rotateState = { wrap, centerX, centerY };
+
+        window.addEventListener('mousemove', rotating);
+        window.addEventListener('mouseup', rotateEnd);
+    }
+    function rotating(e) {
+        if (!rotateState) return;
+        e.preventDefault();
+        const { wrap, centerX, centerY } = rotateState;
+        const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
+        // convert angle so 0 is normal orientation (we adjust)
+        const rotation = angle + 90;
+        wrap.style.transform = `rotate(${rotation}deg)`;
+        updateStampModel(wrap, rotation);
+    }
+    function rotateEnd() {
+        window.removeEventListener('mousemove', rotating);
+        window.removeEventListener('mouseup', rotateEnd);
+        rotateState = null;
+    }
+    function updateStampModel(wrapEl, rotationOverride) {
+        const id = wrapEl.dataset.id;
+        const page = parseInt(wrapEl.dataset.page, 10);
+        const x = Math.round(parseFloat(wrapEl.style.left) || 0);
+        const y = Math.round(parseFloat(wrapEl.style.top) || 0);
+        const w = Math.round(wrapEl.offsetWidth);
+        const h = Math.round(wrapEl.offsetHeight);
+        // rotation: read from transform
+        let rotation = typeof rotationOverride !== 'undefined' ? rotationOverride : 0;
+        if (typeof rotationOverride === 'undefined') {
+            const t = wrapEl.style.transform || '';
+            const m = t.match(/rotate\((-?\d+(\.\d+)?)deg\)/);
+            rotation = m ? parseFloat(m[1]) : 0;
+        }
+
+        // find in stamps model and update
+        ensurePageArray(page);
+        const s = stamps[page].find(i => i.id == id);
+        if (s) {
+            s.x = x; s.y = y; s.w = w; s.h = h; s.rotation = Math.round(rotation);
+        }
+    }
+    function removeStampById(page, id) {
+        if (!stamps[page]) return;
+        stamps[page] = stamps[page].filter(s => s.id != id);
+        refreshStampsForPage();
+    }
+    document.getElementById('deleteSelected').addEventListener('click', () => {
+        if (!activeWrapper) return alert('Pilih stampel terlebih dahulu.');
+        const id = activeWrapper.dataset.id;
+        const page = parseInt(activeWrapper.dataset.page, 10);
+        removeStampById(page, id);
+    });
+    document.getElementById('clearAll').addEventListener('click', () => {
+        if (!confirm('Hapus semua stampel pada halaman ini?')) return;
+        stamps[pageNum] = [];
+        refreshStampsForPage();
+    });
     document.getElementById('prevPage').addEventListener('click', () => {
         if (pageNum <= 1) return;
         pageNum--;
+        activeWrapper = null;
         renderPage(pageNum);
     });
-
     document.getElementById('nextPage').addEventListener('click', () => {
         if (pageNum >= pageCount) return;
         pageNum++;
+        activeWrapper = null;
         renderPage(pageNum);
     });
-
-    // Helper to scale paths for a given page from oldScale -> newScale
-    function scalePagePaths(page, oldScale, newScale) {
-        if (!drawings[page] || !pageViewports[page]) return;
+    function rescaleStampsForPage(oldScale, newScale) {
+        if (!stamps[pageNum]) return;
         const ratio = newScale / oldScale;
-        drawings[page] = drawings[page].map(path => path.map(pt => ({ x: pt.x * ratio, y: pt.y * ratio })));
+        stamps[pageNum].forEach(s => {
+            s.x = Math.round(s.x * ratio);
+            s.y = Math.round(s.y * ratio);
+            s.w = Math.round(s.w * ratio);
+            s.h = Math.round(s.h * ratio);
+        });
     }
-
     document.getElementById('zoomIn').addEventListener('click', () => {
-        const oldScale = scale;
+        const old = scale;
         scale = parseFloat((scale + 0.25).toFixed(2));
-        // scale paths for current page so strokes stay at same relative position
-        scalePagePaths(pageNum, oldScale, scale);
+        rescaleStampsForPage(old, scale);
         renderPage(pageNum);
     });
-
     document.getElementById('zoomOut').addEventListener('click', () => {
         if (scale <= 0.5) return;
-        const oldScale = scale;
+        const old = scale;
         scale = parseFloat((scale - 0.25).toFixed(2));
-        scalePagePaths(pageNum, oldScale, scale);
+        rescaleStampsForPage(old, scale);
         renderPage(pageNum);
     });
+    document.getElementById('stampForm').addEventListener('submit', function(e) {
+        // pastikan input hidden untuk canvas dan stamps ada di form
+        if (!document.getElementById('canvasWidthInput')) {
+            const inpW = document.createElement('input');
+            inpW.type = 'hidden';
+            inpW.name = 'canvas_width';
+            inpW.id = 'canvasWidthInput';
+            this.appendChild(inpW);
 
-    // Undo last stroke on current page
-    document.getElementById('undo').addEventListener('click', () => {
-        if (drawings[pageNum] && drawings[pageNum].length) {
-            drawings[pageNum].pop();
-            renderPage(pageNum);
+            const inpH = document.createElement('input');
+            inpH.type = 'hidden';
+            inpH.name = 'canvas_height';
+            inpH.id = 'canvasHeightInput';
+            this.appendChild(inpH);
+
+            const inpS = document.createElement('input');
+            inpS.type = 'hidden';
+            inpS.name = 'stamps';
+            inpS.id = 'stampsInput';
+            this.appendChild(inpS);
         }
-    });
 
-    // Clear all strokes on current page
-    document.getElementById('clear').addEventListener('click', () => {
-        drawings[pageNum] = [];
-        renderPage(pageNum);
-    });
+        const payload = {};
 
-    // Convert every page's drawing to a PNG dataURL (preserve canvas size)
-    function buildSignedPagesData() {
-        const result = {};
-        // For each page that has drawings, render the drawings onto a temp canvas sized to that page
-        for (const pStr of Object.keys(drawings)) {
-            const p = parseInt(pStr, 10);
-            if (!drawings[p] || !drawings[p].length) continue;
+        for (const p of Object.keys(stamps)) {
+            if (!stamps[p] || stamps[p].length === 0) continue;
 
-            // Determine target width/height from pageViewports if available,
-            const vw = pageViewports[p] ? Math.round(pageViewports[p].width) : drawCanvas.width;
-            const vh = pageViewports[p] ? Math.round(pageViewports[p].height) : drawCanvas.height;
-
-            const temp = document.createElement('canvas');
-            temp.width = vw;
-            temp.height = vh;
-            const tctx = temp.getContext('2d');
-
-            // set same style
-            tctx.lineWidth = drawCtx.lineWidth;
-            tctx.strokeStyle = drawCtx.strokeStyle;
-            tctx.lineCap = drawCtx.lineCap;
-            tctx.lineJoin = drawCtx.lineJoin;
-
-            // draw each path
-            drawings[p].forEach(path => {
-                if (!path || !path.length) return;
-                tctx.beginPath();
-                tctx.moveTo(path[0].x, path[0].y);
-                for (let i = 1; i < path.length; i++) {
-                    tctx.lineTo(path[i].x, path[i].y);
-                }
-                tctx.stroke();
+            payload[p] = stamps[p].map(s => {
+                // konversi posisi ke rasio 0..1 relatif canvas
+                return {
+                    id: s.id,
+                    type: s.type,
+                    x_ratio: s.x / pdfCanvas.width,
+                    y_ratio: s.y / pdfCanvas.height,
+                    width_ratio: s.w / pdfCanvas.width,
+                    height_ratio: s.h / pdfCanvas.height,
+                    rotation: s.rotation || 0
+                };
             });
-
-            // toDataURL
-            result[p] = temp.toDataURL('image/png');
         }
-        return result;
-    }
 
-    // Submit handler - pack signed_pages JSON and submit
-    document.getElementById('saveForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-        const signed = buildSignedPagesData();
-        if (Object.keys(signed).length === 0) {
-            if (!confirm('Tidak ada coretan yang terdeteksi. Tetap simpan tanpa coretan?')) {
-                return;
-            }
-        }
-        document.getElementById('signedPages').value = JSON.stringify(signed);
-        this.submit();
+        document.getElementById('canvasWidthInput').value = pdfCanvas.width;
+        document.getElementById('canvasHeightInput').value = pdfCanvas.height;
+        document.getElementById('stampsInput').value = JSON.stringify(payload);
     });
 
 })();

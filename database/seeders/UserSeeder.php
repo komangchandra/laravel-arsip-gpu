@@ -35,8 +35,8 @@ class UserSeeder extends Seeder
         // Ferry Juanda - Manager
         $ferry = User::create([
             'name' => 'Ferry Juanda B',
-            'email' => 'ferryjuanda@gmail.com',
-            'password' => Hash::make('@Gorby2025'),
+            'email' => 'ferry.juanda@gorbyputrautama.com',
+            'password' => Hash::make('@Kemang43'),
             'jabatan' => 'Operation General Manager',
         ]);
         $ferry->assignRole('manager');
@@ -45,7 +45,7 @@ class UserSeeder extends Seeder
         $wahyu = User::create([
             'name' => 'Ananda Wahyu Tambunan',
             'email' => 'ananda.wahyu@gorbyputrautama.com',
-            'password' => Hash::make('@Gorby2025'),
+            'password' => Hash::make('@Kemang43'),
             'jabatan' => 'Kepala Teknik Tambang',
         ]);
         $wahyu->assignRole('ktt');
@@ -54,7 +54,7 @@ class UserSeeder extends Seeder
         $arif = User::create([
             'name' => 'Arif Rahman',
             'email' => 'mineplan@gorbyputrautama.com',
-            'password' => Hash::make('@Gorby2025'),
+            'password' => Hash::make('@Kemang43'),
             'jabatan' => 'Kepala Teknik Tambang',
         ]);
         $arif->assignRole('ktt');
@@ -63,7 +63,7 @@ class UserSeeder extends Seeder
         $johan = User::create([
             'name' => 'Johan P Barus',
             'email' => '02_mineplan@gorbyputrautama.com',
-            'password' => Hash::make('@Gorby2025'),
+            'password' => Hash::make('@Kemang43'),
             'jabatan' => 'Sr. Mine Engineer',
         ]);
         $johan->assignRole('sr-staff');
@@ -72,7 +72,7 @@ class UserSeeder extends Seeder
         $defri = User::create([
             'name' => 'Defri Pratama',
             'email' => 'defri.pratama@gorbyputrautama.com',
-            'password' => Hash::make('@Gorby2025'),
+            'password' => Hash::make('@Kemang43'),
             'jabatan' => 'Dept. Head Hauling',
         ]);
         $defri->assignRole('sr-staff-haul');
@@ -81,7 +81,7 @@ class UserSeeder extends Seeder
         $rafli = User::create([
             'name' => 'Rafli Ronaldi',
             'email' => '03_mineplan@gorbyputrautama.com',
-            'password' => Hash::make('@Gorby2025'),
+            'password' => Hash::make('@Kemang43'),
             'jabatan' => 'Mine Engineer',
         ]);
         $rafli->assignRole('sr-staff');
@@ -90,7 +90,7 @@ class UserSeeder extends Seeder
         $adminEng = User::create([
             'name' => 'Admin Engineering',
             'email' => 'admin.engineering@gorbyputrautama.com',
-            'password' => Hash::make('@Gorby2025'),
+            'password' => Hash::make('@Kemang43'),
             'jabatan' => 'Staff Engineering',
         ]);
         $adminEng->assignRole('staff');
@@ -99,7 +99,7 @@ class UserSeeder extends Seeder
         $adminHaul = User::create([
             'name' => 'Admin Hauling',
             'email' => 'adminhauling@gorbyputrautama.com',
-            'password' => Hash::make('@Gorby2025'),
+            'password' => Hash::make('@Kemang43'),
             'jabatan' => 'Staff Hauling',
         ]);
         $adminHaul->assignRole('staff-haul');

@@ -47,6 +47,8 @@ Route::middleware('auth')
         // Stamp
         Route::get('documents/{document}/stamp', [DocumentController::class, 'stamp'])
             ->name('documents.stamp');
+        Route::post('documents/{document}/stamp', [DocumentController::class, 'stampStore'])
+            ->name('documents.stamp.store');
 });
 
 require __DIR__.'/auth.php';
