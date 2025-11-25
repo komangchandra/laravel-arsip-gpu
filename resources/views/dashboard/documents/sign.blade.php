@@ -81,22 +81,37 @@
         <canvas id="drawCanvas"></canvas>
     </div>
 
-    <form id="saveForm" method="POST" action="{{ route('dashboard.documents.sign.store', $document->id) }}">
-        @csrf
-        <input type="hidden" name="signed_pages" id="signedPages">
-        <a href="{{ route('dashboard.documents.index') }}" class="btn btn-secondary btn-icon-split my-3">
-            <span class="icon text-white-50">
-                <i class="fas fa-arrow-left"></i>
-            </span>
-            <span class="text">Kembali</span>
-        </a>
-        <button type="submit" class="btn btn-success btn-icon-split my-3">
-            <span class="icon text-white-50">
-                <i class="fas fa-save"></i>
-            </span>
-            <span class="text">Simpan Dokumen</span>
-        </button>
-    </form>
+    <div class="row">
+        <div class="col-lg-12 col-md-12 col-sm-6 d-flex align-items-center my-3">
+            <a href="{{ route('dashboard.documents.index') }}" class="btn btn-secondary btn-icon-split my-3 ">
+                <span class="icon text-white-50">
+                    <i class="fas fa-arrow-left"></i>
+                </span>
+                <span class="text">Kembali</span>
+            </a>
+            <form id="saveForm" method="POST" action="{{ route('dashboard.documents.revisi.store', $document->id) }}" class="mx-3">
+                @csrf
+                <input type="hidden" name="signed_pages" id="signedPages">
+                <button type="submit" class="btn btn-danger btn-icon-split my-3">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-trash"></i>
+                    </span>
+                    <span class="text">Revisi</span>
+                </button>
+            </form>
+            <form id="saveForm" method="POST" action="{{ route('dashboard.documents.sign.store', $document->id) }}">
+                @csrf
+                <input type="hidden" name="signed_pages" id="signedPages">
+                <button type="submit" class="btn btn-success btn-icon-split my-3">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-save"></i>
+                    </span>
+                    <span class="text">Simpan Dokumen</span>
+                </button>
+            </form>
+        </div>
+    </div>
+    
 </div>
 
 @push('js')

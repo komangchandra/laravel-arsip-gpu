@@ -42,6 +42,8 @@ Route::middleware('auth')
             ->name('documents.sign');
         Route::post('documents/{document}/sign', [DocumentController::class, 'signStore'])
             ->name('documents.sign.store');
+        Route::post('documents/{document}/revisi', [DocumentController::class, 'revisiStore'])
+            ->name('documents.revisi.store');
         Route::resource('archiveds', ArchiveController::class);
 
         // Stamp
