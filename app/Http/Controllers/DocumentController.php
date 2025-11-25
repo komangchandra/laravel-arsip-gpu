@@ -191,12 +191,17 @@ class DocumentController extends Controller
             Storage::disk('public')->delete($document->file_path);
         }
 
+        // Tentukan status berdasarkan tombol yang diklik
+        $status = $request->action_type === "needs_revision" 
+                    ? "needs_revision" 
+                    : "signed";
+                    
         // ================================
         // UPDATE PATH DI TABLE DOCUMENTS
         // ================================
         $document->update([
             'file_path' => $newFilePath,
-            'status' => 'signed'
+            'status' => $status
         ]);
 
         // ================================

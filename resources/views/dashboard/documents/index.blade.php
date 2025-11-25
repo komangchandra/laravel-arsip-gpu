@@ -90,7 +90,7 @@
                                     $colors = [
                                         'uploaded' => 'secondary',
                                         'needs_revision' => 'danger',
-                                        'approved' => 'info',
+                                        'ready_to_sign' => 'info',
                                         'signed' => 'success',
                                         'archived' => 'primary',
                                     ];

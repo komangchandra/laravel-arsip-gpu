@@ -100,8 +100,8 @@
                         <option value="needs_revision" {{ $document->status == 'needs_revision' ? 'selected' : '' }}>
                             Need Revision
                         </option>
-                        <option value="approved" {{ $document->status == 'approved' ? 'selected' : '' }}>
-                            Approved
+                        <option value="ready_to_sign" {{ $document->status == 'ready_to_sign' ? 'selected' : '' }}>
+                            Ready to Sign
                         </option>
                         <option value="signed" {{ $document->status == 'signed' ? 'selected' : '' }}>
                             Signed

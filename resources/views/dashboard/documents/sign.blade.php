@@ -89,26 +89,23 @@
                 </span>
                 <span class="text">Kembali</span>
             </a>
-            <form id="saveForm" method="POST" action="{{ route('dashboard.documents.revisi.store', $document->id) }}" class="mx-3">
+            <form id="saveForm" method="POST" action="{{ route('dashboard.documents.sign.store', $document->id) }}">
                 @csrf
                 <input type="hidden" name="signed_pages" id="signedPages">
-                <button type="submit" class="btn btn-danger btn-icon-split my-3">
+                <button type="submit" name="action_type" value="signed" class="btn btn-success btn-icon-split my-3 mx-3">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-save"></i>
+                    </span>
+                    <span class="text">Simpan Dokumen</span>
+                </button>
+                <button type="submit" name="action_type" value="needs_revision" class="btn btn-danger btn-icon-split my-3">
                     <span class="icon text-white-50">
                         <i class="fas fa-trash"></i>
                     </span>
                     <span class="text">Revisi</span>
                 </button>
             </form>
-            <form id="saveForm" method="POST" action="{{ route('dashboard.documents.sign.store', $document->id) }}">
-                @csrf
-                <input type="hidden" name="signed_pages" id="signedPages">
-                <button type="submit" class="btn btn-success btn-icon-split my-3">
-                    <span class="icon text-white-50">
-                        <i class="fas fa-save"></i>
-                    </span>
-                    <span class="text">Simpan Dokumen</span>
-                </button>
-            </form>
+            
         </div>
     </div>
     
