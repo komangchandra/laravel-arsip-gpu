@@ -11,10 +11,7 @@
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
-            <a class="text-decoration-none" href="{{ route('dashboard') }}"
-                >Dashboard</a
-            >
-            /
+            <a class="text-decoration-none" href="{{ route('dashboard') }}">Dashboard</a>/
             <span>Documents</span>
         </h1>
         @php
