@@ -18,7 +18,7 @@
             <span>Documents</span>
         </h1>
         @php
-            $disabledRoles = ['director', 'manager', 'ktt'];
+            $disabledRoles = ['director', 'manager', 'ktt', 'sr-staff', 'sr-staff-haul'];
             $isDisabled = auth()->user() && auth()->user()->hasAnyRole($disabledRoles);
         @endphp
 
