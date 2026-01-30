@@ -51,6 +51,10 @@ Route::middleware('auth')
             ->name('documents.stamp');
         Route::post('documents/{document}/stamp', [DocumentController::class, 'stampStore'])
             ->name('documents.stamp.store');
+        
+        // Download
+        Route::get('documents/{document}/download', [DocumentController::class, 'download'])
+            ->name('documents.download');
 });
 
 // Staff Route
@@ -60,5 +64,14 @@ Route::middleware(['auth', 'role:super-admin|staff|staff-haul'])
     ->group(function () {
         Route::get('documents/create', [DocumentController::class, 'create'])->name('documents.create');
 });
+
+Route::get('/dashboard/documents/{id}/annotate', 
+    [DocumentController::class, 'annotate'])
+    ->name('dashboard.documents.annotate');
+
+Route::post('/dashboard/documents/{id}/annotate-upload',
+    [DocumentController::class, 'annotateUpload'])
+    ->name('dashboard.documents.annotateUpload');
+
 
 require __DIR__.'/auth.php';

@@ -34,6 +34,36 @@
         </div>
 
         <div class="card-body">
+
+            <form method="GET" action="{{ route('dashboard.archiveds.index') }}" class="mb-3">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label>Dari Tanggal</label>
+                        <input type="date" name="start_date"
+                            class="form-control"
+                            value="{{ request('start_date') }}">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Sampai Tanggal</label>
+                        <input type="date" name="end_date"
+                            class="form-control"
+                            value="{{ request('end_date') }}">
+                    </div>
+
+                    <div class="col-md-3 align-self-end">
+                        <button class="btn btn-primary">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
+
+                        <a href="{{ route('dashboard.archiveds.index') }}"
+                        class="btn btn-secondary">
+                            Reset
+                        </a>
+                    </div>
+                </div>
+            </form> 
+
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
@@ -90,6 +120,11 @@
                                 <!-- Tombol lihat file signed -->
                                 <a href="{{ asset('storage/' . $document->file_path) }}" target="_blank" class="btn btn-sm btn-info">
                                     <i class="fas fa-eye"></i>
+                                </a>
+
+                                <!-- Tombol download -->
+                                <a href="{{ route('dashboard.documents.download', $document->id) }}" class="btn btn-sm btn-success">
+                                    <i class="fas fa-download"></i>
                                 </a>
 
                                 <!-- Tombol delete -->

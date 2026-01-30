@@ -45,6 +45,36 @@
         </div>
 
         <div class="card-body">
+
+            <form method="GET" action="{{ route('dashboard.documents.index') }}" class="mb-3">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label>Dari Tanggal</label>
+                        <input type="date" name="start_date"
+                            class="form-control"
+                            value="{{ request('start_date') }}">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Sampai Tanggal</label>
+                        <input type="date" name="end_date"
+                            class="form-control"
+                            value="{{ request('end_date') }}">
+                    </div>
+
+                    <div class="col-md-3 align-self-end">
+                        <button class="btn btn-primary">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
+
+                        <a href="{{ route('dashboard.documents.index') }}"
+                        class="btn btn-secondary">
+                            Reset
+                        </a>
+                    </div>
+                </div>
+            </form>
+
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
@@ -128,6 +158,11 @@
                                     <i class="fas fa-eye"></i>
                                 </a>
 
+                                <!-- Tombol download -->
+                                <a href="{{ route('dashboard.documents.download', $document->id) }}" class="btn btn-sm btn-success">
+                                    <i class="fas fa-download"></i>
+                                </a>
+
                                 <!-- Tombol stampel -->
                                 @role(['super-admin', 'staff'])
                                 <a href="{{ route('dashboard.documents.stamp', $document->id) }}" class="btn btn-sm btn-primary">
@@ -139,6 +174,13 @@
                                 @role(['super-admin', 'manager', 'ktt', 'sr-staff', 'sr-staff-haul'])
                                     <a href="{{ route('dashboard.documents.sign', $document->id) }}" class="btn btn-sm btn-primary">
                                         <i class="fas fa-pen"></i>
+                                    </a>
+                                @endrole
+
+                                <!-- Tombol Annotate -->
+                                @role('super-admin')
+                                    <a href="{{ route('dashboard.documents.annotate', $document->id) }}" class="btn btn-sm btn-secondary">
+                                        <i class="fas fa-pencil-alt"></i>
                                     </a>
                                 @endrole
 

@@ -10,10 +10,27 @@ class ArchiveController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $documents = Document::where('status', 'archived')->get();
-        // dd($documents);
+        $query = Document::with([
+            'creator',
+            'category',
+            'checkedBy',
+            'signedBy'
+        ])->where('status', 'archived');
+
+        // Filter dari tanggal
+        if ($request->filled('start_date')) {
+            $query->whereDate('created_at', '>=', $request->start_date);
+        }
+
+        // Filter sampai tanggal
+        if ($request->filled('end_date')) {
+            $query->whereDate('created_at', '<=', $request->end_date);
+        }
+
+        $documents = $query->latest()->get();
+
         return view('dashboard.archiveds.index', compact('documents'));
     }
 
@@ -64,4 +81,6 @@ class ArchiveController extends Controller
     {
         //
     }
+
+    
 }

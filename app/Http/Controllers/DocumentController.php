@@ -16,9 +16,27 @@ class DocumentController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $documents = Document::with(['creator', 'category'])->where('status', '!=', 'archived')->get();
+        $query = Document::with([
+            'creator',
+            'category',
+            'checkedBy',
+            'signedBy'
+        ])->where('status', '!=', 'archived');
+
+        // Filter dari tanggal
+        if ($request->filled('start_date')) {
+            $query->whereDate('created_at', '>=', $request->start_date);
+        }
+
+        // Filter sampai tanggal
+        if ($request->filled('end_date')) {
+            $query->whereDate('created_at', '<=', $request->end_date);
+        }
+
+        $documents = $query->latest()->get();
+
         return view('dashboard.documents.index', compact('documents'));
     }
 
@@ -346,5 +364,51 @@ class DocumentController extends Controller
             ->route('dashboard.documents.index')
             ->with('success', 'Document perlu direvisi.');
     }
+
+    public function annotate($id)
+    {
+        $document = Document::findOrFail($id);
+
+        return view('dashboard.documents.annotate', compact('document'));
+    }
+
+    public function annotateUpload(Request $request, $id)
+    {
+        $document = Document::findOrFail($id);
+
+        $request->validate([
+            'annotated_pdf' => 'required|mimes:pdf',
+        ]);
+
+        // Hapus file lama
+        if (Storage::disk('public')->exists($document->file_path)) {
+            Storage::disk('public')->delete($document->file_path);
+        }
+
+        // Upload file baru
+        $newPath = $request->file('annotated_pdf')->store('documents', 'public');
+
+        // Update DB
+        $document->update([
+            'file_path' => $newPath,
+            'status'    => 'updated',
+        ]);
+
+        return redirect()
+            ->route('dashboard.documents.index')
+            ->with('success', 'PDF berhasil ditimpa dengan hasil coretan.');
+    }
+
+    public function download(Document $document)
+    {
+        $filePath = storage_path('app/public/' . $document->file_path);
+
+        if (!file_exists($filePath)) {
+            return redirect()->back()->with('error', 'File tidak ditemukan.');
+        }
+
+        return response()->download($filePath, $document->title . '.' . pathinfo($filePath, PATHINFO_EXTENSION));
+    }
+
 
 }
