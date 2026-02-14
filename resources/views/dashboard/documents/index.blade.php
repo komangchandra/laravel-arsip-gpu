@@ -237,8 +237,8 @@
     $(document).ready(function () {
         $("#dataTable").DataTable();
 
-        // SweetAlert konfirmasi hapus
-        $(".btn-delete").click(function (e) {
+        // pakai event delegation
+        $(document).on("click", ".btn-delete", function (e) {
             e.preventDefault();
             const form = $(this).closest("form");
 
