@@ -80,6 +80,7 @@
                     <thead>
                         <tr>
                             <th>#</th>
+                            <th>Tanggal</th>
                             <th>Judul</th>
                             <th>Kategori</th>
                             <th>Status</th>
@@ -93,6 +94,7 @@
                     <tfoot>
                         <tr>
                             <th>#</th>
+                            <th>Tanggal</th>
                             <th>Judul</th>
                             <th>Kategori</th>
                             <th>Status</th>
@@ -107,6 +109,8 @@
                         @forelse ($documents as $document)
                         <tr>
                             <td>{{ $loop->iteration }}</td>
+
+                            <td>{{ $document->created_at->format('d M Y') }}</td>
 
                             <td>{{ $document->title }}</td>
 

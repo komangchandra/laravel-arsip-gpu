@@ -35,7 +35,7 @@ class DocumentController extends Controller
             $query->whereDate('created_at', '<=', $request->end_date);
         }
 
-        $documents = $query->latest()->get();
+        $documents = $query->oldest()->get();
 
         return view('dashboard.documents.index', compact('documents'));
     }
