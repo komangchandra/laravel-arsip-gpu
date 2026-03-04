@@ -19,23 +19,32 @@ class DocumentController extends Controller
     public function index(Request $request)
     {
         $query = Document::with([
-            'creator',
-            'category',
-            'checkedBy',
-            'signedBy'
-        ])->where('status', '!=', 'archived');
+                'creator',
+                'category',
+                'checkedBy',
+                'signedBy'
+            ])
+            ->whereIn('status', ['ready_to_sign', 'signed'])
 
-        // Filter dari tanggal
+            // ⛔ exclude document yang sudah disign Ferry
+            ->whereDoesntHave('signedBy', function ($q) {
+                $q->where('email', 'ferry.juanda@gorbyputrautama.com');
+            });
+
+        /*
+        |--------------------------------------------------------------------------
+        | FILTER TANGGAL
+        |--------------------------------------------------------------------------
+        */
         if ($request->filled('start_date')) {
             $query->whereDate('created_at', '>=', $request->start_date);
         }
 
-        // Filter sampai tanggal
         if ($request->filled('end_date')) {
             $query->whereDate('created_at', '<=', $request->end_date);
         }
 
-        $documents = $query->oldest()->get();
+        $documents = $query->latest()->get();
 
         return view('dashboard.documents.index', compact('documents'));
     }

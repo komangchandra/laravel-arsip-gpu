@@ -4,7 +4,10 @@ use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\FullSignController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RevisionController;
+use App\Http\Controllers\UploadedController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +58,24 @@ Route::middleware('auth')
         // Download
         Route::get('documents/{document}/download', [DocumentController::class, 'download'])
             ->name('documents.download');
+
+        // =========================
+        // REVISIONS (DIPISAH)
+        // =========================
+        Route::get('revisions', [RevisionController::class, 'index'])
+            ->name('revisions.index');
+
+        // =========================
+        // FULL SIGN (DIPISAH)
+        // =========================
+        Route::get('full-sign', [FullSignController::class, 'index'])
+            ->name('full-sign.index');
+
+        // =========================
+        // RECENTLY U (DIPISAH)
+        // =========================
+        Route::get('recently-uploaded', [UploadedController::class, 'index'])
+            ->name('recently-uploaded.index');
 });
 
 // Staff Route

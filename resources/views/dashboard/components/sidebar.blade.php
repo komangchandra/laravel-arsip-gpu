@@ -64,10 +64,31 @@
         </div>
     </li> -->
 
+    <li class="nav-item {{ Request::routeIs('dashboard.recently-uploaded*') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('dashboard.recently-uploaded.index') }}">
+            <i class="fas fa-file-alt"></i>
+            <span>Recently Uploaded</span>
+        </a>
+    </li>
+
     <li class="nav-item {{ Request::routeIs('dashboard.documents*') ? 'active' : '' }}">
         <a class="nav-link" href="{{ route('dashboard.documents.index') }}">
             <i class="fas fa-file-alt"></i>
-            <span>All BA</span>
+            <span>Ready to Sign</span>
+        </a>
+    </li>
+
+    <li class="nav-item {{ Request::routeIs('dashboard.full-sign*') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('dashboard.full-sign.index') }}">
+            <i class="fas fa-file-alt"></i>
+            <span>Full Sign</span>
+        </a>
+    </li>
+
+    <li class="nav-item {{ Request::routeIs('dashboard.revisions*') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('dashboard.revisions.index') }}">
+            <i class="fas fa-file-alt"></i>
+            <span>Revisi</span>
         </a>
     </li>
 
