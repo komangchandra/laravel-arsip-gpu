@@ -85,6 +85,13 @@
         </a>
     </li>
 
+    <li class="nav-item {{ Request::routeIs('dashboard.stamped*') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('dashboard.stamped.index') }}">
+            <i class="fas fa-file-alt"></i>
+            <span>Stamped</span>
+        </a>
+    </li>
+
     <li class="nav-item {{ Request::routeIs('dashboard.revisions*') ? 'active' : '' }}">
         <a class="nav-link" href="{{ route('dashboard.revisions.index') }}">
             <i class="fas fa-file-alt"></i>

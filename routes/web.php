@@ -7,6 +7,7 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\FullSignController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RevisionController;
+use App\Http\Controllers\StampedController;
 use App\Http\Controllers\UploadedController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -76,6 +77,12 @@ Route::middleware('auth')
         // =========================
         Route::get('recently-uploaded', [UploadedController::class, 'index'])
             ->name('recently-uploaded.index');
+
+        // =========================
+        // STAMPED (DIPISAH)
+        // =========================
+        Route::get('stamped', [StampedController::class, 'index'])
+            ->name('stamped.index');
 });
 
 // Staff Route
