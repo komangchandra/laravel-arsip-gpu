@@ -127,12 +127,12 @@
         <div class="group ms-2">
             <button type="button" class="btn btn-info btn-icon-split" id="addStampGpu">
                 <span class="icon text-white-50"><i class="fas fa-stamp"></i></span>
-                <span class="text">Stampel GPU</span>
+                <span class="text">Sign Wahyu</span>
             </button>
 
             <button type="button" class="btn btn-info btn-icon-split" id="addStampGe">
                 <span class="icon text-white-50"><i class="fas fa-stamp"></i></span>
-                <span class="text">Stampel GE</span>
+                <span class="text">Sign Arif</span>
             </button>
         </div>
     </div>
@@ -142,7 +142,7 @@
         <div id="stampContainer"></div>
     </div>
 
-    <form id="stampForm" method="POST" action="{{ route('dashboard.documents.stamp.store', $document->id) }}">
+    <form id="stampForm" method="POST" action="{{ route('dashboard.documents.sign-tempel.store', $document->id) }}">
         @csrf
         <a href="{{ route('dashboard.documents.index') }}" class="btn btn-secondary btn-icon-split my-3">
             <span class="icon text-white-50"><i class="fas fa-arrow-left"></i></span>
@@ -150,7 +150,7 @@
         </a>
         <button type="submit" class="btn btn-success btn-icon-split my-3" id="saveBtn">
             <span class="icon text-white-50"><i class="fas fa-save"></i></span>
-            <span class="text">Simpan Stampel</span>
+            <span class="text">Simpan Sign Tempel</span>
         </button>
     </form>
 </div>
@@ -165,8 +165,8 @@
 <script>
 (() => {
     // ----- CONFIG: use your public images paths -----
-    const STAMP_GPU = "{{ asset('images/stampel-gpu.png') }}"; // 320x108 px (you provided)
-    const STAMP_GE  = "{{ asset('images/stampel-ge.png') }}";  // 268x72 px  (you provided)
+    const STAMP_GPU = "{{ asset('images/sign-wahyu.png') }}"; // 320x108 px (you provided)
+    const STAMP_GE  = "{{ asset('images/sign-arif.png') }}";  // 268x72 px  (you provided)
 
     const url = "{{ asset('storage/' . $document->file_path) }}";
     const pdfCanvas = document.getElementById('pdfCanvas');
@@ -272,7 +272,7 @@
     function addStamp(type) {
         ensurePageArray(pageNum);
         const defaultW = Math.min(160, Math.round(pdfCanvas.width * 0.25));
-        const aspect = (type==='gpu') ? (185/783) : (72/268);
+        const aspect = (type==='gpu') ? (308/282) : (86/190);
         const defaultH = Math.round(defaultW * aspect);
 
         const stObj = {

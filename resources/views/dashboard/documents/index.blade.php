@@ -181,6 +181,13 @@
                                     </a>
                                 @endrole
 
+                                <!-- Tombol Sign tempel -->
+                                @role(['super-admin', 'ktt', 'sr-staff', 'sr-staff-haul'])
+                                    <a href="{{ route('dashboard.documents.sign-tempel', $document->id) }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-stamp"></i>
+                                    </a>
+                                @endrole
+
                                 <!-- Tombol Annotate -->
                                 @role('super-admin')
                                     <a href="{{ route('dashboard.documents.annotate', $document->id) }}" class="btn btn-sm btn-secondary">

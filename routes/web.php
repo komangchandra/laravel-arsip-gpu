@@ -50,6 +50,12 @@ Route::middleware('auth')
             ->name('documents.revisi.store');
         Route::resource('archiveds', ArchiveController::class);
 
+        // Sign Tempel
+        Route::get('documents/{document}/sign-tempel', [DocumentController::class, 'signTempel'])
+            ->name('documents.sign-tempel');
+        Route::post('documents/{document}/sign-tempel', [DocumentController::class, 'signTempelStore'])
+            ->name('documents.sign-tempel.store');
+
         // Stamp
         Route::get('documents/{document}/stamp', [DocumentController::class, 'stamp'])
             ->name('documents.stamp');

@@ -419,5 +419,71 @@ class DocumentController extends Controller
         return response()->download($filePath, $document->title . '.' . pathinfo($filePath, PATHINFO_EXTENSION));
     }
 
+    public function signTempel(Document $document)
+    {
+        return view('dashboard.documents.sign-tempel', compact('document'));
+    }
+
+    public function signTempelStore(Request $request, $id)
+    {
+        $document = Document::findOrFail($id);
+
+        $stampsData = json_decode($request->stamps, true);
+        if (!$stampsData) {
+            return back()->with('error', 'Tidak ada sign untuk disimpan.');
+        }
+
+        $original = storage_path('app/public/' . $document->file_path);
+
+        $pdf = new \setasign\Fpdi\Fpdi();
+        $pageCount = $pdf->setSourceFile($original);
+
+        // map tipe ke nama file aktual
+        $stampMap = [
+            'gpu' => 'sign-wahyu.png',
+            'ge'  => 'sign-arif.png',
+        ];
+
+        for ($page = 1; $page <= $pageCount; $page++) {
+            $tpl = $pdf->importPage($page);
+            $size = $pdf->getTemplateSize($tpl);
+
+            // lebih aman tentukan orientasi dari ukuran
+            $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+            $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+            $pdf->useTemplate($tpl);
+
+            // Jika ada stempel di halaman ini
+            if (isset($stampsData[$page])) {
+                foreach ($stampsData[$page] as $s) {
+                    $type = $s['type']; // "gpu" atau "ge"
+                    if (!isset($stampMap[$type])) continue;
+                    $stampPath = public_path("images/" . $stampMap[$type]);
+                    if (!file_exists($stampPath)) continue;
+
+                    // Konversi koordinat relatif ke PDF asli
+                    $x = $s['x_ratio'] * $size['width'];
+                    $y = $s['y_ratio'] * $size['height'];
+                    $w = $s['width_ratio'] * $size['width'];
+                    $h = $s['height_ratio'] * $size['height'];
+
+                    // Perhatikan: parameter rotasi tergantung dukungan library Image()
+                    $rotation = isset($s['rotation']) ? $s['rotation'] : 0;
+                    $pdf->Image($stampPath, $x, $y, $w, $h, '', '', '', false, 300, '', false, false, 0, $rotation);
+                }
+            }
+        }
+
+        // timpa file lama
+        $pdf->Output('F', storage_path('app/public/' . $document->file_path));
+
+        $document->update([
+            'status' => 'signed'
+        ]);
+
+        return redirect()->route('dashboard.documents.index')
+            ->with('success', 'Stampel diterapkan.');
+    }
+
 
 }

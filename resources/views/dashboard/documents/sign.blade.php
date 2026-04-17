@@ -39,6 +39,20 @@
             zoom: 0.9;
         } /* optional responsive tweak */
     }
+
+    .pdf-scroll {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        padding: 10px;
+    }
+
+    #pageContainer {
+        position: relative;
+        display: inline-block;
+        min-width: max-content;
+    }
 </style>
 @endpush
 
@@ -81,9 +95,11 @@
         </div>
     </div>
 
-    <div id="pageContainer">
-        <canvas id="pdfCanvas"></canvas>
-        <canvas id="drawCanvas"></canvas>
+    <div class="pdf-scroll">
+        <div id="pageContainer">
+            <canvas id="pdfCanvas"></canvas>
+            <canvas id="drawCanvas"></canvas>
+        </div>
     </div>
 
     <div class="row">
