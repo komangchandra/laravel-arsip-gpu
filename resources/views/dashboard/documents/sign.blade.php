@@ -59,6 +59,42 @@
 <div class="container-fluid">
     <h1 class="h3 mb-4 text-gray-800">Sign Document: {{ $document->title }}</h1>
 
+    <div class="modal fade" id="pdfErrorModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Error PDF</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">
+                        &times;
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <p>
+                        PDF yang diupload tidak dapat diproses oleh sistem.
+                    </p>
+
+                    <p>
+                        Silakan buka file tersebut, lalu pilih <b>Print → Microsoft Print to PDF</b>
+                        <br>(bukan langsung Save/Export).
+                    </p>
+
+                    <p>
+                        Setelah itu upload kembali file yang sudah di-print.
+                    </p>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        Tutup
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
     <div class="toolbar mb-3">
         <div class="group">
             <button type="button" class="btn btn-primary" id="prevPage">
@@ -464,5 +500,13 @@
             });
 
     })();
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        @if(session('error') === 'PDF_NOT_COMPATIBLE')
+            $('#pdfErrorModal').modal('show');
+        @endif
+    });
 </script>
 @endpush @endsection
