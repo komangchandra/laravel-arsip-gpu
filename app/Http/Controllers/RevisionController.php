@@ -15,7 +15,7 @@ class RevisionController extends Controller
             'checkedBy',
             'signedBy'
         ])
-        ->where('status', 'needs_revision'); // ⬅️ WAJIB ini
+        ->where('status', 'needs_revision')->latest();
 
         /*
         |--------------------------------------------------------------------------
