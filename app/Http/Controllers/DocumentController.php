@@ -174,15 +174,15 @@ class DocumentController extends Controller
         $outputPdfPath = storage_path('app/public/' . $newFilePath);
 
         // Start FPDI
-        // $pdf = new Fpdi();
-        // $pageCount = $pdf->setSourceFile($originalPdfPath);
-        try {
-            $pdf = new Fpdi();
-            $pageCount = $pdf->setSourceFile($originalPdfPath);
+        $pdf = new Fpdi();
+        $pageCount = $pdf->setSourceFile($originalPdfPath);
+        // try {
+        //     $pdf = new Fpdi();
+        //     $pageCount = $pdf->setSourceFile($originalPdfPath);
 
-        } catch (CrossReferenceException $e) {
-            return back()->with('error', 'PDF_NOT_COMPATIBLE');
-        }
+        // } catch (CrossReferenceException $e) {
+        //     return back()->with('error', 'PDF_NOT_COMPATIBLE');
+        // }
 
         for ($page = 1; $page <= $pageCount; $page++) {
 
