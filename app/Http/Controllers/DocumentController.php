@@ -11,6 +11,8 @@ use Intervention\Image\ImageManager;
 use setasign\Fpdi\Fpdi;
 use Intervention\Image\Drivers\Gd\Driver;
 use setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException;
+use RuntimeException;
+use Symfony\Component\Process\Process;
 
 class DocumentController extends Controller
 {
@@ -70,7 +72,18 @@ class DocumentController extends Controller
             'category_id' => 'nullable|exists:categories,id',
         ]);
 
-        $path = $request->file('file_path')->store('documents', 'public');
+        $uploadedFile = $request->file('file_path');
+        $path = $uploadedFile->store('documents', 'public');
+
+        if (strtolower($uploadedFile->getClientOriginalExtension()) === 'pdf') {
+            try {
+                $this->ensurePdfIsFpdiCompatible(Storage::disk('public')->path($path));
+            } catch (RuntimeException $e) {
+                Storage::disk('public')->delete($path);
+
+                return back()->withInput()->withErrors(['file_path' => $e->getMessage()]);
+            }
+        }
 
         $document = new Document();
         $document->title = $validated['title'];
@@ -174,6 +187,7 @@ class DocumentController extends Controller
         $outputPdfPath = storage_path('app/public/' . $newFilePath);
 
         // Start FPDI
+        $this->ensurePdfIsFpdiCompatible($originalPdfPath);
         $pdf = new Fpdi();
         $pageCount = $pdf->setSourceFile($originalPdfPath);
         // try {
@@ -265,6 +279,7 @@ class DocumentController extends Controller
 
         $original = storage_path('app/public/' . $document->file_path);
 
+        $this->ensurePdfIsFpdiCompatible($original);
         $pdf = new \setasign\Fpdi\Fpdi();
         $pageCount = $pdf->setSourceFile($original);
 
@@ -319,6 +334,7 @@ class DocumentController extends Controller
         $outputPdfPath = storage_path('app/public/' . $newFilePath);
 
         // Start FPDI
+        $this->ensurePdfIsFpdiCompatible($originalPdfPath);
         $pdf = new Fpdi();
         $pageCount = $pdf->setSourceFile($originalPdfPath);
 
@@ -443,6 +459,7 @@ class DocumentController extends Controller
 
         $original = storage_path('app/public/' . $document->file_path);
 
+        $this->ensurePdfIsFpdiCompatible($original);
         $pdf = new \setasign\Fpdi\Fpdi();
         $pageCount = $pdf->setSourceFile($original);
 
@@ -493,5 +510,85 @@ class DocumentController extends Controller
             ->with('success', 'Stampel diterapkan.');
     }
 
+    /**
+     * Normalisasi hanya PDF dengan compressed cross-reference ke PDF 1.4.
+     */
+    private function ensurePdfIsFpdiCompatible(string $pdfPath): void
+    {
+        if (!is_file($pdfPath)) {
+            throw new RuntimeException('File PDF tidak ditemukan.');
+        }
 
+        try {
+            (new Fpdi())->setSourceFile($pdfPath);
+            return;
+        } catch (CrossReferenceException) {
+            // PDF akan dinormalisasi dengan Ghostscript di bawah.
+        }
+
+        $temporaryPath = dirname($pdfPath) . DIRECTORY_SEPARATOR
+            . pathinfo($pdfPath, PATHINFO_FILENAME)
+            . '_normalized_' . bin2hex(random_bytes(6)) . '.pdf';
+        $backupPath = null;
+
+        try {
+            $process = new Process([
+                $this->ghostscriptBinary(),
+                '-sDEVICE=pdfwrite',
+                '-dCompatibilityLevel=1.4',
+                '-dNOPAUSE',
+                '-dBATCH',
+                '-dSAFER',
+                '-dPDFSETTINGS=/prepress',
+                '-sOutputFile=' . $temporaryPath,
+                $pdfPath,
+            ]);
+            $process->setTimeout(120);
+            $process->run();
+
+            if (!$process->isSuccessful() || !is_file($temporaryPath) || filesize($temporaryPath) === 0) {
+                $detail = trim($process->getErrorOutput() ?: $process->getOutput());
+                throw new RuntimeException('PDF gagal dikonversi.' . ($detail ? ' ' . $detail : ''));
+            }
+
+            // Jangan mengganti file awal sebelum hasilnya terbukti bisa dibaca FPDI.
+            (new Fpdi())->setSourceFile($temporaryPath);
+
+            $backupPath = $pdfPath . '.backup_' . bin2hex(random_bytes(6));
+            if (!rename($pdfPath, $backupPath)) {
+                throw new RuntimeException('File PDF awal gagal diamankan sebelum konversi.');
+            }
+
+            if (!rename($temporaryPath, $pdfPath)) {
+                rename($backupPath, $pdfPath);
+                throw new RuntimeException('Hasil konversi PDF gagal disimpan.');
+            }
+
+            @unlink($backupPath);
+            $backupPath = null;
+        } catch (RuntimeException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            throw new RuntimeException(
+                'PDF tidak kompatibel dan gagal dinormalisasi. Pastikan Ghostscript sudah terpasang: '
+                . $exception->getMessage(),
+                previous: $exception
+            );
+        } finally {
+            if ($backupPath && is_file($backupPath) && !is_file($pdfPath)) {
+                @rename($backupPath, $pdfPath);
+            }
+            if (is_file($temporaryPath)) {
+                @unlink($temporaryPath);
+            }
+        }
+    }
+
+    private function ghostscriptBinary(): string
+    {
+        return env(
+            'PDF_GHOSTSCRIPT_BINARY',
+            PHP_OS_FAMILY === 'Windows' ? 'gswin64c.exe' : 'gs'
+        );
+    }
 }
