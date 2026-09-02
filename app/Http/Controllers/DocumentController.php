@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DocumentStatus;
 use App\Models\Category;
 use App\Models\Document;
+use App\Pdf\RotatableFpdi;
+use App\Services\DocumentSigningService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Intervention\Image\ImageManager;
-use setasign\Fpdi\Fpdi;
-use Intervention\Image\Drivers\Gd\Driver;
-use setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException;
 use RuntimeException;
+use setasign\Fpdi\Fpdi;
+use setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException;
 use Symfony\Component\Process\Process;
 
 class DocumentController extends Controller
@@ -21,13 +22,16 @@ class DocumentController extends Controller
      */
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Document::class);
         $query = Document::with([
-                'creator',
-                'category',
-                'checkedBy',
-                'signedBy'
-            ])
-            ->whereIn('status', ['ready_to_sign', 'signed'])
+            'creator',
+            'category',
+            'checkedBy',
+            'signedBy',
+            'signRoutes.signer',
+        ])
+            ->accessibleTo($request->user())
+            ->whereIn('status', ['routing', 'waiting_for_signatures', 'ready_to_sign', 'signed'])
 
             // ⛔ exclude document yang sudah disign Ferry
             ->whereDoesntHave('signedBy', function ($q) {
@@ -57,7 +61,9 @@ class DocumentController extends Controller
      */
     public function create()
     {
+        $this->authorize('create', Document::class);
         $categories = Category::all();
+
         return view('dashboard.documents.create', compact('categories'));
     }
 
@@ -66,6 +72,7 @@ class DocumentController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorize('create', Document::class);
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'file_path' => 'required|file|mimes:pdf,doc,docx',
@@ -73,19 +80,19 @@ class DocumentController extends Controller
         ]);
 
         $uploadedFile = $request->file('file_path');
-        $path = $uploadedFile->store('documents', 'public');
+        $path = $uploadedFile->store('documents', 'documents');
 
         if (strtolower($uploadedFile->getClientOriginalExtension()) === 'pdf') {
             try {
-                $this->ensurePdfIsFpdiCompatible(Storage::disk('public')->path($path));
+                $this->ensurePdfIsFpdiCompatible(Storage::disk('documents')->path($path));
             } catch (RuntimeException $e) {
-                Storage::disk('public')->delete($path);
+                Storage::disk('documents')->delete($path);
 
                 return back()->withInput()->withErrors(['file_path' => $e->getMessage()]);
             }
         }
 
-        $document = new Document();
+        $document = new Document;
         $document->title = $validated['title'];
         $document->file_path = $path;
         $document->status = 'uploaded';
@@ -93,7 +100,7 @@ class DocumentController extends Controller
         $document->category_id = $validated['category_id'] ?? null;
         $document->save();
 
-        return redirect()->route('dashboard.documents.index')->with('success', 'Document uploaded successfully.');
+        return redirect()->route('dashboard.recently-uploaded.index')->with('success', 'Document uploaded successfully.');
     }
 
     /**
@@ -109,57 +116,72 @@ class DocumentController extends Controller
      */
     public function edit(Document $document)
     {
+        $this->authorize('update', $document);
+        $document->load('signRoutes.signer');
         $categories = Category::all();
+
         return view('dashboard.documents.edit', compact(['document', 'categories']));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Document $document)
+    public function update(Request $request, Document $document, DocumentSigningService $signingService)
     {
+        $this->authorize('update', $document);
+        $workflowLocked = $document->routing_started_at !== null;
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'file_path' => 'nullable|file|mimes:pdf,doc,docx',
             'category_id' => 'nullable|exists:categories,id',
-            'status' => 'required',
+            'file_path' => [$workflowLocked ? 'prohibited' : 'nullable', 'file', 'mimes:pdf,doc,docx'],
+            'status' => [$workflowLocked ? 'prohibited' : 'required', 'string'],
+            'action' => ['nullable', 'in:save,request_revision'],
         ]);
 
-        // Update file jika ada file baru
-        if ($request->hasFile('file_path')) {
-            if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
-                Storage::disk('public')->delete($document->file_path);
+        $updates = [
+            'title' => $validated['title'],
+            'category_id' => $validated['category_id'] ?? $document->category_id,
+        ];
+
+        if (! $workflowLocked && $request->hasFile('file_path')) {
+            if ($document->file_path && Storage::disk('documents')->exists($document->file_path)) {
+                Storage::disk('documents')->delete($document->file_path);
             }
 
-            $validated['file_path'] = $request->file('file_path')->store('documents', 'public');
-        } else {
-            $validated['file_path'] = $document->file_path;
+            $updates['file_path'] = $request->file('file_path')->store('documents', 'documents');
         }
 
-        // Update document (tanpa checked_by)
-        $document->update([
-            'title' => $validated['title'],
-            'file_path' => $validated['file_path'],
-            'category_id' => $validated['category_id'] ?? $document->category_id,
-            'status' => $validated['status'],
-        ]);
+        if (! $workflowLocked) {
+            $updates['status'] = $validated['status'];
+        }
+
+        $document->update($updates);
+
+        if ($request->input('action') === 'request_revision') {
+            $signingService->markNeedsRevision($document);
+        }
 
         // Tambahkan user ke pivot checked_by
         $document->checkedBy()->syncWithoutDetaching([Auth::id()]);
 
         return redirect()
             ->route('dashboard.documents.index')
-            ->with('success', 'Document updated successfully.');
+            ->with(
+                'success',
+                $request->input('action') === 'request_revision'
+                    ? 'Dokumen ditandai perlu revisi dan routing dihentikan.'
+                    : 'Document updated successfully.'
+            );
     }
-
 
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(Document $document)
     {
-        if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
-            Storage::disk('public')->delete($document->file_path);
+        $this->authorize('delete', $document);
+        if ($document->file_path && Storage::disk('documents')->exists($document->file_path)) {
+            Storage::disk('documents')->delete($document->file_path);
         }
 
         $document->delete();
@@ -180,15 +202,15 @@ class DocumentController extends Controller
         $signedPages = json_decode($request->signed_pages, true);
 
         // Original PDF
-        $originalPdfPath = storage_path('app/public/' . $document->file_path);
+        $originalPdfPath = Storage::disk('documents')->path($document->file_path);
 
         // Output PDF
-        $newFilePath = 'documents/signed_' . time() . '.pdf';
-        $outputPdfPath = storage_path('app/public/' . $newFilePath);
+        $newFilePath = 'documents/signed_'.time().'.pdf';
+        $outputPdfPath = Storage::disk('documents')->path($newFilePath);
 
         // Start FPDI
         $this->ensurePdfIsFpdiCompatible($originalPdfPath);
-        $pdf = new Fpdi();
+        $pdf = new Fpdi;
         $pageCount = $pdf->setSourceFile($originalPdfPath);
         // try {
         //     $pdf = new Fpdi();
@@ -236,21 +258,21 @@ class DocumentController extends Controller
         // ================================
         // HAPUS FILE LAMA
         // ================================
-        if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
-            Storage::disk('public')->delete($document->file_path);
+        if ($document->file_path && Storage::disk('documents')->exists($document->file_path)) {
+            Storage::disk('documents')->delete($document->file_path);
         }
 
         // Tentukan status berdasarkan tombol yang diklik
-        $status = $request->action_type === "needs_revision" 
-                    ? "needs_revision" 
-                    : "signed";
-                    
+        $status = $request->action_type === 'needs_revision'
+                    ? 'needs_revision'
+                    : 'signed';
+
         // ================================
         // UPDATE PATH DI TABLE DOCUMENTS
         // ================================
         $document->update([
             'file_path' => $newFilePath,
-            'status' => $status
+            'status' => $status,
         ]);
 
         // ================================
@@ -265,22 +287,24 @@ class DocumentController extends Controller
 
     public function stamp(Document $document)
     {
+        $this->authorize('stamp', $document);
+
         return view('dashboard.documents.stamp', compact('document'));
     }
 
-    public function stampStore(Request $request, $id)
+    public function stampStore(Request $request, Document $document)
     {
-        $document = Document::findOrFail($id);
+        $this->authorize('stamp', $document);
 
         $stampsData = json_decode($request->stamps, true);
-        if (!$stampsData) {
+        if (! $stampsData) {
             return back()->with('error', 'Tidak ada stampel untuk disimpan.');
         }
 
-        $original = storage_path('app/public/' . $document->file_path);
+        $original = Storage::disk('documents')->path($document->file_path);
 
         $this->ensurePdfIsFpdiCompatible($original);
-        $pdf = new \setasign\Fpdi\Fpdi();
+        $pdf = new RotatableFpdi;
         $pageCount = $pdf->setSourceFile($original);
 
         for ($page = 1; $page <= $pageCount; $page++) {
@@ -294,8 +318,10 @@ class DocumentController extends Controller
             if (isset($stampsData[$page])) {
                 foreach ($stampsData[$page] as $s) {
                     $type = $s['type']; // "gpu" atau "ge"
-                    $stampPath = public_path("images/stampel-$type.png");
-                    if (!file_exists($stampPath)) continue;
+                    $stampPath = Storage::disk('signature-assets')->path("stampel-$type.png");
+                    if (! file_exists($stampPath)) {
+                        continue;
+                    }
 
                     // Konversi koordinat relatif ke PDF asli
                     $x = $s['x_ratio'] * $size['width'];
@@ -303,20 +329,34 @@ class DocumentController extends Controller
                     $w = $s['width_ratio'] * $size['width'];
                     $h = $s['height_ratio'] * $size['height'];
 
-                    $pdf->Image($stampPath, $x, $y, $w, $h, '', '', '', false, 300, '', false, false, 0, $s['rotation']);
+                    $rotation = max(-360, min(360, (float) ($s['rotation'] ?? 0)));
+                    $pdf->rotatedImage($stampPath, $x, $y, $w, $h, $rotation);
                 }
             }
         }
 
         // timpa file lama
-        $pdf->Output('F', storage_path('app/public/' . $document->file_path));
+        $pdf->Output('F', Storage::disk('documents')->path($document->file_path));
 
         $document->update([
-            'status' => 'stamped'
+            'status' => 'stamped',
         ]);
 
-        return redirect()->route('dashboard.documents.index')
+        return redirect()->route('dashboard.full-sign.index')
             ->with('success', 'Stampel diterapkan.');
+    }
+
+    public function archive(Document $document)
+    {
+        $this->authorize('archive', $document);
+
+        $document->update([
+            'status' => DocumentStatus::Archived,
+        ]);
+
+        return redirect()
+            ->route('dashboard.archiveds.index')
+            ->with('success', 'Dokumen berhasil diarsipkan.');
     }
 
     public function revisiStore(Request $request, $id)
@@ -327,15 +367,15 @@ class DocumentController extends Controller
         $signedPages = json_decode($request->signed_pages, true);
 
         // Original PDF
-        $originalPdfPath = storage_path('app/public/' . $document->file_path);
+        $originalPdfPath = Storage::disk('documents')->path($document->file_path);
 
         // Output PDF
-        $newFilePath = 'documents/needRevisi_' . time() . '.pdf';
-        $outputPdfPath = storage_path('app/public/' . $newFilePath);
+        $newFilePath = 'documents/needRevisi_'.time().'.pdf';
+        $outputPdfPath = Storage::disk('documents')->path($newFilePath);
 
         // Start FPDI
         $this->ensurePdfIsFpdiCompatible($originalPdfPath);
-        $pdf = new Fpdi();
+        $pdf = new Fpdi;
         $pageCount = $pdf->setSourceFile($originalPdfPath);
 
         for ($page = 1; $page <= $pageCount; $page++) {
@@ -376,8 +416,8 @@ class DocumentController extends Controller
         // ================================
         // HAPUS FILE LAMA
         // ================================
-        if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
-            Storage::disk('public')->delete($document->file_path);
+        if ($document->file_path && Storage::disk('documents')->exists($document->file_path)) {
+            Storage::disk('documents')->delete($document->file_path);
         }
 
         // ================================
@@ -385,7 +425,7 @@ class DocumentController extends Controller
         // ================================
         $document->update([
             'file_path' => $newFilePath,
-            'status' => 'needs_revision'
+            'status' => 'needs_revision',
         ]);
 
         // ================================
@@ -398,33 +438,33 @@ class DocumentController extends Controller
             ->with('success', 'Document perlu direvisi.');
     }
 
-    public function annotate($id)
+    public function annotate(Document $document)
     {
-        $document = Document::findOrFail($id);
+        $this->authorize('annotate', $document);
 
         return view('dashboard.documents.annotate', compact('document'));
     }
 
-    public function annotateUpload(Request $request, $id)
+    public function annotateUpload(Request $request, Document $document)
     {
-        $document = Document::findOrFail($id);
+        $this->authorize('annotate', $document);
 
         $request->validate([
             'annotated_pdf' => 'required|mimes:pdf',
         ]);
 
         // Hapus file lama
-        if (Storage::disk('public')->exists($document->file_path)) {
-            Storage::disk('public')->delete($document->file_path);
+        if (Storage::disk('documents')->exists($document->file_path)) {
+            Storage::disk('documents')->delete($document->file_path);
         }
 
         // Upload file baru
-        $newPath = $request->file('annotated_pdf')->store('documents', 'public');
+        $newPath = $request->file('annotated_pdf')->store('documents', 'documents');
 
         // Update DB
         $document->update([
             'file_path' => $newPath,
-            'status'    => 'updated',
+            'status' => 'updated',
         ]);
 
         return redirect()
@@ -434,13 +474,14 @@ class DocumentController extends Controller
 
     public function download(Document $document)
     {
-        $filePath = storage_path('app/public/' . $document->file_path);
+        $this->authorize('download', $document);
+        $filePath = Storage::disk('documents')->path($document->file_path);
 
-        if (!file_exists($filePath)) {
+        if (! file_exists($filePath)) {
             return redirect()->back()->with('error', 'File tidak ditemukan.');
         }
 
-        return response()->download($filePath, $document->title . '.' . pathinfo($filePath, PATHINFO_EXTENSION));
+        return response()->download($filePath, $document->title.'.'.pathinfo($filePath, PATHINFO_EXTENSION));
     }
 
     public function signTempel(Document $document)
@@ -453,20 +494,20 @@ class DocumentController extends Controller
         $document = Document::findOrFail($id);
 
         $stampsData = json_decode($request->stamps, true);
-        if (!$stampsData) {
+        if (! $stampsData) {
             return back()->with('error', 'Tidak ada sign untuk disimpan.');
         }
 
-        $original = storage_path('app/public/' . $document->file_path);
+        $original = Storage::disk('documents')->path($document->file_path);
 
         $this->ensurePdfIsFpdiCompatible($original);
-        $pdf = new \setasign\Fpdi\Fpdi();
+        $pdf = new Fpdi;
         $pageCount = $pdf->setSourceFile($original);
 
         // map tipe ke nama file aktual
         $stampMap = [
             'gpu' => 'sign-wahyu.png',
-            'ge'  => 'sign-arif.png',
+            'ge' => 'sign-arif.png',
         ];
 
         for ($page = 1; $page <= $pageCount; $page++) {
@@ -482,9 +523,13 @@ class DocumentController extends Controller
             if (isset($stampsData[$page])) {
                 foreach ($stampsData[$page] as $s) {
                     $type = $s['type']; // "gpu" atau "ge"
-                    if (!isset($stampMap[$type])) continue;
-                    $stampPath = public_path("images/" . $stampMap[$type]);
-                    if (!file_exists($stampPath)) continue;
+                    if (! isset($stampMap[$type])) {
+                        continue;
+                    }
+                    $stampPath = Storage::disk('signature-assets')->path($stampMap[$type]);
+                    if (! file_exists($stampPath)) {
+                        continue;
+                    }
 
                     // Konversi koordinat relatif ke PDF asli
                     $x = $s['x_ratio'] * $size['width'];
@@ -500,10 +545,10 @@ class DocumentController extends Controller
         }
 
         // timpa file lama
-        $pdf->Output('F', storage_path('app/public/' . $document->file_path));
+        $pdf->Output('F', Storage::disk('documents')->path($document->file_path));
 
         $document->update([
-            'status' => 'signed'
+            'status' => 'signed',
         ]);
 
         return redirect()->route('dashboard.documents.index')
@@ -515,20 +560,21 @@ class DocumentController extends Controller
      */
     private function ensurePdfIsFpdiCompatible(string $pdfPath): void
     {
-        if (!is_file($pdfPath)) {
+        if (! is_file($pdfPath)) {
             throw new RuntimeException('File PDF tidak ditemukan.');
         }
 
         try {
-            (new Fpdi())->setSourceFile($pdfPath);
+            (new Fpdi)->setSourceFile($pdfPath);
+
             return;
         } catch (CrossReferenceException) {
             // PDF akan dinormalisasi dengan Ghostscript di bawah.
         }
 
-        $temporaryPath = dirname($pdfPath) . DIRECTORY_SEPARATOR
-            . pathinfo($pdfPath, PATHINFO_FILENAME)
-            . '_normalized_' . bin2hex(random_bytes(6)) . '.pdf';
+        $temporaryPath = dirname($pdfPath).DIRECTORY_SEPARATOR
+            .pathinfo($pdfPath, PATHINFO_FILENAME)
+            .'_normalized_'.bin2hex(random_bytes(6)).'.pdf';
         $backupPath = null;
 
         try {
@@ -540,26 +586,26 @@ class DocumentController extends Controller
                 '-dBATCH',
                 '-dSAFER',
                 '-dPDFSETTINGS=/prepress',
-                '-sOutputFile=' . $temporaryPath,
+                '-sOutputFile='.$temporaryPath,
                 $pdfPath,
             ]);
             $process->setTimeout(120);
             $process->run();
 
-            if (!$process->isSuccessful() || !is_file($temporaryPath) || filesize($temporaryPath) === 0) {
+            if (! $process->isSuccessful() || ! is_file($temporaryPath) || filesize($temporaryPath) === 0) {
                 $detail = trim($process->getErrorOutput() ?: $process->getOutput());
-                throw new RuntimeException('PDF gagal dikonversi.' . ($detail ? ' ' . $detail : ''));
+                throw new RuntimeException('PDF gagal dikonversi.'.($detail ? ' '.$detail : ''));
             }
 
             // Jangan mengganti file awal sebelum hasilnya terbukti bisa dibaca FPDI.
-            (new Fpdi())->setSourceFile($temporaryPath);
+            (new Fpdi)->setSourceFile($temporaryPath);
 
-            $backupPath = $pdfPath . '.backup_' . bin2hex(random_bytes(6));
-            if (!rename($pdfPath, $backupPath)) {
+            $backupPath = $pdfPath.'.backup_'.bin2hex(random_bytes(6));
+            if (! rename($pdfPath, $backupPath)) {
                 throw new RuntimeException('File PDF awal gagal diamankan sebelum konversi.');
             }
 
-            if (!rename($temporaryPath, $pdfPath)) {
+            if (! rename($temporaryPath, $pdfPath)) {
                 rename($backupPath, $pdfPath);
                 throw new RuntimeException('Hasil konversi PDF gagal disimpan.');
             }
@@ -571,11 +617,11 @@ class DocumentController extends Controller
         } catch (\Throwable $exception) {
             throw new RuntimeException(
                 'PDF tidak kompatibel dan gagal dinormalisasi. Pastikan Ghostscript sudah terpasang: '
-                . $exception->getMessage(),
+                .$exception->getMessage(),
                 previous: $exception
             );
         } finally {
-            if ($backupPath && is_file($backupPath) && !is_file($pdfPath)) {
+            if ($backupPath && is_file($backupPath) && ! is_file($pdfPath)) {
                 @rename($backupPath, $pdfPath);
             }
             if (is_file($temporaryPath)) {

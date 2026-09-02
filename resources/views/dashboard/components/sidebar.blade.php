@@ -10,7 +10,7 @@
         <div class="sidebar-brand-icon rotate-n-15">
             <i class="fas fa-folder-open"></i>
         </div>
-        <div class="sidebar-brand-text mx-3">GPU GE <sup>docs</sup></div>
+        <div class="sidebar-brand-text mx-3">E-Doc GPU <sup>V2</sup></div>
     </a>
 
     <!-- Divider -->
@@ -74,7 +74,18 @@
     <li class="nav-item {{ Request::routeIs('dashboard.documents*') ? 'active' : '' }}">
         <a class="nav-link" href="{{ route('dashboard.documents.index') }}">
             <i class="fas fa-file-alt"></i>
-            <span>Ready to Sign</span>
+            <span>Progress Document</span>
+        </a>
+    </li>
+
+    <li class="nav-item {{ Request::routeIs('dashboard.signing-inbox*') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('dashboard.signing-inbox.index') }}">
+            <i class="fas fa-signature"></i>
+            <span>Perlu Tindakan Saya</span>
+            @auth
+                @php($signingCount = auth()->user()->assignedSignRoutes()->where('status', 'active')->count())
+                @if($signingCount)<span class="badge badge-danger ml-1">{{ $signingCount }}</span>@endif
+            @endauth
         </a>
     </li>
 

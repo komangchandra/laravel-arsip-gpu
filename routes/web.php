@@ -4,9 +4,13 @@ use App\Http\Controllers\ArchiveController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\DocumentFileController;
+use App\Http\Controllers\DocumentSignController;
+use App\Http\Controllers\DocumentSignRouteController;
 use App\Http\Controllers\FullSignController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RevisionController;
+use App\Http\Controllers\SigningInboxController;
 use App\Http\Controllers\StampedController;
 use App\Http\Controllers\UploadedController;
 use App\Http\Controllers\UserController;
@@ -31,7 +35,7 @@ Route::middleware(['auth', 'role:super-admin'])
     ->group(function () {
         Route::resource('users', UserController::class);
         Route::resource('categories', CategoryController::class);
-});
+    });
 
 // ALl user routes
 Route::middleware('auth')
@@ -39,32 +43,50 @@ Route::middleware('auth')
     ->name('dashboard.')
     ->group(function () {
         // Document Routes
-        Route::resource('documents', DocumentController::class);
+        Route::resource('documents', DocumentController::class)
+            ->only(['index', 'store', 'edit', 'update', 'destroy']);
 
-        // Sign
-        Route::get('documents/{document}/sign', [DocumentController::class, 'sign'])
+        Route::get('documents/{document}/sign-routing', [DocumentSignRouteController::class, 'edit'])
+            ->name('documents.sign-routing.edit');
+        Route::put('documents/{document}/sign-routing', [DocumentSignRouteController::class, 'update'])
+            ->name('documents.sign-routing.update');
+        Route::post('documents/{document}/sign-routing/start', [DocumentSignRouteController::class, 'start'])
+            ->name('documents.sign-routing.start');
+        Route::post('documents/{document}/sign-routing/cancel', [DocumentSignRouteController::class, 'cancel'])
+            ->name('documents.sign-routing.cancel');
+
+        Route::get('documents/{document}/sign', [DocumentSignController::class, 'show'])
             ->name('documents.sign');
-        Route::post('documents/{document}/sign', [DocumentController::class, 'signStore'])
+        Route::post('documents/{document}/sign', [DocumentSignController::class, 'store'])
+            ->middleware('throttle:sign-document')
             ->name('documents.sign.store');
-        Route::post('documents/{document}/revisi', [DocumentController::class, 'revisiStore'])
-            ->name('documents.revisi.store');
-        Route::resource('archiveds', ArchiveController::class);
-
-        // Sign Tempel
-        Route::get('documents/{document}/sign-tempel', [DocumentController::class, 'signTempel'])
+        Route::get('documents/{document}/sign-tempel', [DocumentSignController::class, 'showStamp'])
             ->name('documents.sign-tempel');
-        Route::post('documents/{document}/sign-tempel', [DocumentController::class, 'signTempelStore'])
+        Route::post('documents/{document}/sign-tempel', [DocumentSignController::class, 'storeStamp'])
+            ->middleware('throttle:sign-document')
             ->name('documents.sign-tempel.store');
+        Route::post('documents/{document}/request-revision', [DocumentSignController::class, 'requestRevision'])
+            ->name('documents.sign.request-revision');
+        Route::get('signing-inbox', [SigningInboxController::class, 'index'])
+            ->name('signing-inbox.index');
+        Route::resource('archiveds', ArchiveController::class)->only('index');
 
         // Stamp
         Route::get('documents/{document}/stamp', [DocumentController::class, 'stamp'])
             ->name('documents.stamp');
         Route::post('documents/{document}/stamp', [DocumentController::class, 'stampStore'])
             ->name('documents.stamp.store');
-        
+        Route::patch('documents/{document}/archive', [DocumentController::class, 'archive'])
+            ->name('documents.archive');
+
         // Download
-        Route::get('documents/{document}/download', [DocumentController::class, 'download'])
+        Route::get('documents/{document}/preview', [DocumentFileController::class, 'preview'])
+            ->name('documents.preview');
+        Route::get('documents/{document}/download', [DocumentFileController::class, 'download'])
             ->name('documents.download');
+        Route::get('documents/{document}/signature-assets/{asset}', [DocumentFileController::class, 'signatureAsset'])
+            ->where('asset', '[A-Za-z0-9._-]+')
+            ->name('documents.signature-assets.show');
 
         // =========================
         // REVISIONS (DIPISAH)
@@ -89,23 +111,21 @@ Route::middleware('auth')
         // =========================
         Route::get('stamped', [StampedController::class, 'index'])
             ->name('stamped.index');
-});
+
+        Route::get('documents/{document}/annotate', [DocumentController::class, 'annotate'])
+            ->name('documents.annotate');
+        Route::post('documents/{document}/annotate-upload', [DocumentController::class, 'annotateUpload'])
+            ->name('documents.annotateUpload');
+    });
 
 // Staff Route
 Route::middleware(['auth', 'role:super-admin|staff|staff-haul'])
     ->prefix('dashboard')
     ->name('dashboard.')
     ->group(function () {
-        Route::get('documents/create', [DocumentController::class, 'create'])->name('documents.create');
-});
-
-Route::get('/dashboard/documents/{id}/annotate', 
-    [DocumentController::class, 'annotate'])
-    ->name('dashboard.documents.annotate');
-
-Route::post('/dashboard/documents/{id}/annotate-upload',
-    [DocumentController::class, 'annotateUpload'])
-    ->name('dashboard.documents.annotateUpload');
-
+        Route::get('documents/create', [DocumentController::class, 'create'])
+            ->middleware('can:create,App\\Models\\Document')
+            ->name('documents.create');
+    });
 
 require __DIR__.'/auth.php';

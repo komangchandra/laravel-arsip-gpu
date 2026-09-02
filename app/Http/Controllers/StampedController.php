@@ -13,9 +13,9 @@ class StampedController extends Controller
             'creator',
             'category',
             'checkedBy',
-            'signedBy'
-        ])
-        ->where('status', 'stamped'); // ⬅️ WAJIB ini
+            'signedBy',
+        ])->accessibleTo($request->user())
+            ->where('status', 'stamped'); // ⬅️ WAJIB ini
 
         /*
         |--------------------------------------------------------------------------

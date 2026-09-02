@@ -84,6 +84,7 @@
                             <th>Judul</th>
                             <th>Kategori</th>
                             <th>Status</th>
+                            <th>Catatan Revisi</th>
                             <th>Dibuat Oleh</th>
                             <th>Dicek Oleh</th>
                             <th>Sign By</th>
@@ -98,6 +99,7 @@
                             <th>Judul</th>
                             <th>Kategori</th>
                             <th>Status</th>
+                            <th>Catatan Revisi</th>
                             <th>Dibuat Oleh</th>
                             <th>Dicek Oleh</th>
                             <th>Sign By</th>
@@ -127,9 +129,29 @@
                                     ];
                                 @endphp
 
-                                <span class="badge bg-{{ $colors[$document->status] ?? 'secondary' }} text-white">
-                                    {{ ucfirst(str_replace('_', ' ', $document->status)) }}
+                                <span class="badge bg-{{ $colors[$document->status->value] ?? 'secondary' }} text-white">
+                                    {{ ucfirst(str_replace('_', ' ', $document->status->value)) }}
                                 </span>
+                            </td>
+
+                            <td style="min-width: 260px">
+                                @php
+                                    $revisionRequest = $document->signRoutes
+                                        ->where('status', \App\Enums\SignRouteStatus::RevisionRequested)
+                                        ->sortByDesc('revision_requested_at')
+                                        ->first();
+                                @endphp
+                                @if ($revisionRequest)
+                                    <div class="font-weight-bold text-danger">{{ $revisionRequest->notes }}</div>
+                                    <div class="small text-muted mt-1">
+                                        {{ $revisionRequest->signer?->name ?? 'User tidak ditemukan' }}
+                                        @if ($revisionRequest->revision_requested_at)
+                                            &middot; {{ $revisionRequest->revision_requested_at->format('d/m/Y H:i') }}
+                                        @endif
+                                    </div>
+                                @else
+                                    <span class="text-muted">Ditandai perlu revisi tanpa catatan signer.</span>
+                                @endif
                             </td>
 
                             <td>{{ $document->creator->name ?? '-' }}</td>
@@ -157,47 +179,42 @@
                             </td>
 
                             <td>
-                                <!-- Tombol lihat file signed -->
-                                <a href="{{ asset('storage/' . $document->file_path) }}" target="_blank" class="btn btn-sm btn-info">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-
-                                <!-- Tombol download -->
-                                <a href="{{ route('dashboard.documents.download', $document->id) }}" class="btn btn-sm btn-success">
-                                    <i class="fas fa-download"></i>
-                                </a>
+                                @can('download', $document)
+                                    <a href="{{ route('dashboard.documents.preview', $document) }}" target="_blank" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>
+                                    <a href="{{ route('dashboard.documents.download', $document) }}" class="btn btn-sm btn-success"><i class="fas fa-download"></i></a>
+                                @endcan
 
                                 <!-- Tombol stampel -->
-                                @role(['super-admin', 'staff'])
+                                @can('stamp', $document)
                                 <a href="{{ route('dashboard.documents.stamp', $document->id) }}" class="btn btn-sm btn-primary">
                                     <i class="fas fa-stamp"></i>
                                 </a>
-                                @endrole
+                                @endcan
 
                                 <!-- Tombol Sign -->
-                                @role(['super-admin', 'manager', 'ktt', 'sr-staff', 'sr-staff-haul'])
+                                @can('sign', $document)
                                     <a href="{{ route('dashboard.documents.sign', $document->id) }}" class="btn btn-sm btn-primary">
                                         <i class="fas fa-pen"></i>
                                     </a>
-                                @endrole
+                                @endcan
 
                                 <!-- Tombol Annotate -->
-                                @role('super-admin')
+                                @can('annotate', $document)
                                     <a href="{{ route('dashboard.documents.annotate', $document->id) }}" class="btn btn-sm btn-secondary">
                                         <i class="fas fa-pencil-alt"></i>
                                     </a>
-                                @endrole
+                                @endcan
 
                                 <!-- Tombol edit -->
-                                @role(['super-admin', 'staff', 'staff-haul'])
+                                @can('update', $document)
                                     <a href="{{ route('dashboard.documents.edit', $document->id) }}" 
                                     class="btn btn-sm btn-warning">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                @endrole
+                                @endcan
 
                                 <!-- Tombol delete -->
-                                @role('super-admin')
+                                @can('delete', $document)
                                     <form action="{{ route('dashboard.documents.destroy', $document->id) }}" 
                                         method="POST" style="display:inline">
                                         @csrf
@@ -206,12 +223,12 @@
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
-                                @endrole
+                                @endcan
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="text-center">Belum ada dokumen</td>
+                            <td colspan="10" class="text-center">Belum ada dokumen</td>
                         </tr>
                         @endforelse
                     </tbody>

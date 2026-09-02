@@ -14,6 +14,7 @@ class UserController extends Controller
     public function index()
     {
         $users = User::with('roles')->get();
+
         // dd($users);
         return view('dashboard.users.index', compact('users'));
     }
@@ -24,6 +25,7 @@ class UserController extends Controller
     public function create()
     {
         $roles = Role::pluck('name')->all();
+
         return view('dashboard.users.create', compact('roles'));
     }
 

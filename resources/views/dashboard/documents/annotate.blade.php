@@ -11,7 +11,7 @@
     </div>
 
     <!-- Viewer PDF -->
-    <iframe src="{{ asset('storage/' . $document->file_path) }}" style="width:100%; height:80vh; border:1px solid #ccc;"></iframe>
+    <iframe src="{{ route('dashboard.documents.preview', $document) }}" style="width:100%; height:80vh; border:1px solid #ccc;"></iframe>
 
 
     <hr>
@@ -32,7 +32,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
 <script>
-    const url = "{{ asset('storage/' . $document->file_path) }}";
+    const url = "{{ route('dashboard.documents.preview', $document) }}";
 
     pdfjsLib.getDocument(url).promise.then(function(pdf) {
 

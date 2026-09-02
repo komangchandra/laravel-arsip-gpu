@@ -166,9 +166,9 @@
             </form>
 
             <form id="revisionForm" method="POST"
-                action="{{ route('dashboard.documents.revisi.store', $document->id) }}">
+                action="{{ route('dashboard.documents.sign.request-revision', $document) }}">
                 @csrf
-                <input type="hidden" name="signed_pages" id="revisionSignedPages">
+                <input type="text" name="notes" class="form-control d-inline-block" style="width: 300px" maxlength="2000" required placeholder="Alasan revisi wajib diisi">
 
                 <button type="submit"
                         class="btn btn-danger btn-icon-split">
@@ -195,7 +195,7 @@
 
 <script>
     (() => {
-        const url = "{{ asset('storage/' . $document->file_path) }}";
+        const url = "{{ route('dashboard.documents.preview', $document) }}";
 
         let pdfDoc = null;
         let pageNum = 1;
@@ -477,26 +477,6 @@
                 document.getElementById("signedPages").value =
                     JSON.stringify(signed);
                 this.submit();
-            });
-
-        // =============================
-        // SUBMIT REVISI
-        // =============================
-        document
-            .getElementById("revisionForm")
-            .addEventListener("submit", function (e) {
-
-                const signed = buildSignedPagesData();
-
-                if (Object.keys(signed).length === 0) {
-                    if (!confirm("Tidak ada coretan revisi. Tetap kirim revisi?")) {
-                        e.preventDefault();
-                        return;
-                    }
-                }
-
-                document.getElementById("revisionSignedPages").value =
-                    JSON.stringify(signed);
             });
 
     })();

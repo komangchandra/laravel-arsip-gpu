@@ -13,9 +13,9 @@ class UploadedController extends Controller
             'creator',
             'category',
             'checkedBy',
-            'signedBy'
-        ])
-        ->where('status', 'uploaded'); // ⬅️ WAJIB ini
+            'signedBy',
+        ])->accessibleTo($request->user())
+            ->where('status', 'uploaded'); // ⬅️ WAJIB ini
 
         /*
         |--------------------------------------------------------------------------

@@ -17,7 +17,7 @@ class AuthController extends Controller
             'device_name' => 'required', // Nama perangkat untuk token
         ]);
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        if (! Auth::attempt($request->only('email', 'password'))) {
             throw ValidationException::withMessages([
                 'email' => ['Kredensial yang diberikan tidak cocok dengan catatan kami.'],
             ]);

@@ -110,25 +110,20 @@
                                     ];
                                 @endphp
 
-                                <span class="badge bg-{{ $colors[$document->status] ?? 'secondary' }} text-white">
-                                    {{ ucfirst(str_replace('_', ' ', $document->status)) }}
+                                <span class="badge bg-{{ $colors[$document->status->value] ?? 'secondary' }} text-white">
+                                    {{ ucfirst(str_replace('_', ' ', $document->status->value)) }}
                                 </span>
                             </td>
                             <td>{{ $document->created_at }}</td>
                             <td>{{ $document->updated_at }}</td>
                             <td>
-                                <!-- Tombol lihat file signed -->
-                                <a href="{{ asset('storage/' . $document->file_path) }}" target="_blank" class="btn btn-sm btn-info">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-
-                                <!-- Tombol download -->
-                                <a href="{{ route('dashboard.documents.download', $document->id) }}" class="btn btn-sm btn-success">
-                                    <i class="fas fa-download"></i>
-                                </a>
+                                @can('download', $document)
+                                    <a href="{{ route('dashboard.documents.preview', $document) }}" target="_blank" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>
+                                    <a href="{{ route('dashboard.documents.download', $document) }}" class="btn btn-sm btn-success"><i class="fas fa-download"></i></a>
+                                @endcan
 
                                 <!-- Tombol delete -->
-                                @role('super-admin')
+                                @can('delete', $document)
                                     <form action="{{ route('dashboard.documents.destroy', $document->id) }}" 
                                         method="POST" style="display:inline">
                                         @csrf
@@ -137,7 +132,7 @@
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
-                                @endrole
+                                @endcan
                             </td>
                         </tr>
                         @empty

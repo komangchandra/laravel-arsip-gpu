@@ -23,14 +23,14 @@ class UserSeeder extends Seeder
         ]);
         $komang->assignRole('super-admin');
 
-        // Wayan Sujasman - Director
-        $wayan = User::create([
-            'name' => 'Wayan Sujasman',
-            'email' => 'wayans@atlas-coal.co.id',
-            'password' => Hash::make('@Atlas2025'),
-            'jabatan' => 'Direktur Utama',
-        ]);
-        $wayan->assignRole('director');
+        // // Wayan Sujasman - Director
+        // $wayan = User::create([
+        //     'name' => 'Wayan Sujasman',
+        //     'email' => 'wayans@atlas-coal.co.id',
+        //     'password' => Hash::make('@Atlas2025'),
+        //     'jabatan' => 'Direktur Utama',
+        // ]);
+        // $wayan->assignRole('director');
 
         // Ferry Juanda - Manager
         $ferry = User::create([
@@ -53,11 +53,20 @@ class UserSeeder extends Seeder
         //  Arif Rahman - KTT
         $arif = User::create([
             'name' => 'Arif Rahman',
-            'email' => 'mineplan@gorbyputrautama.com',
+            'email' => 'arif.rahman@gorbyputrautama.com',
             'password' => Hash::make('@Kemang43'),
             'jabatan' => 'Kepala Teknik Tambang',
         ]);
         $arif->assignRole('ktt');
+
+        //  Dawud Prionggodo - KTT
+        $dawud = User::create([
+            'name' => 'Dawud Prionggodo',
+            'email' => 'mineplan@gorbyputrautama.com',
+            'password' => Hash::make('@Kemang43'),
+            'jabatan' => 'Sr Mine Engineer',
+        ]);
+        $dawud->assignRole('sr-staff');
 
         // Johan P Barus - Sr. Staff Mine Engineer
         $johan = User::create([

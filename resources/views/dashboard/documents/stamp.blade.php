@@ -31,7 +31,7 @@
 /* each stamp wrapper */
 .stamp-wrap {
     position: absolute;
-    transform-origin: top left; /* we manage rotation around top-left then adjust */
+    transform-origin: center center;
     pointer-events: auto;
     z-index: 40;
 }
@@ -165,10 +165,10 @@
 <script>
 (() => {
     // ----- CONFIG: use your public images paths -----
-    const STAMP_GPU = "{{ asset('images/stampel-gpu.png') }}"; // 320x108 px (you provided)
-    const STAMP_GE  = "{{ asset('images/stampel-ge.png') }}";  // 268x72 px  (you provided)
+    const STAMP_GPU = "{{ route('dashboard.documents.signature-assets.show', [$document, 'stampel-gpu.png']) }}";
+    const STAMP_GE  = "{{ route('dashboard.documents.signature-assets.show', [$document, 'stampel-ge.png']) }}";
 
-    const url = "{{ asset('storage/' . $document->file_path) }}";
+    const url = "{{ route('dashboard.documents.preview', $document) }}";
     const pdfCanvas = document.getElementById('pdfCanvas');
     const pdfCtx = pdfCanvas.getContext('2d');
     const stampContainer = document.getElementById('stampContainer');

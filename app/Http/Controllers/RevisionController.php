@@ -13,9 +13,10 @@ class RevisionController extends Controller
             'creator',
             'category',
             'checkedBy',
-            'signedBy'
-        ])
-        ->where('status', 'needs_revision')->latest();
+            'signedBy',
+            'signRoutes.signer',
+        ])->accessibleTo($request->user())
+            ->where('status', 'needs_revision')->latest();
 
         /*
         |--------------------------------------------------------------------------

@@ -16,8 +16,9 @@ class ArchiveController extends Controller
             'creator',
             'category',
             'checkedBy',
-            'signedBy'
-        ])->where('status', 'archived');
+            'signedBy',
+            'signRoutes.signer',
+        ])->accessibleTo($request->user())->where('status', 'archived');
 
         // Filter dari tanggal
         if ($request->filled('start_date')) {
@@ -81,6 +82,4 @@ class ArchiveController extends Controller
     {
         //
     }
-
-    
 }

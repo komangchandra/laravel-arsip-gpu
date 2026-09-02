@@ -1,2 +1,5 @@
 *
+!signature-assets/
+signature-assets/*
+!signature-assets/*.png
 !.gitignore

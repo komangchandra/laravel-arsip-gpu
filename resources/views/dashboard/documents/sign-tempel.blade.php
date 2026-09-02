@@ -31,7 +31,7 @@
 /* each stamp wrapper */
 .stamp-wrap {
     position: absolute;
-    transform-origin: top left; /* we manage rotation around top-left then adjust */
+    transform-origin: center center;
     pointer-events: auto;
     z-index: 40;
 }
@@ -142,9 +142,9 @@
         <div id="stampContainer"></div>
     </div>
 
-    <form id="stampForm" method="POST" action="{{ route('dashboard.documents.sign-tempel.store', $document->id) }}">
+    <form id="stampForm" method="POST" action="{{ route('dashboard.documents.sign-tempel.store', $document) }}">
         @csrf
-        <a href="{{ route('dashboard.documents.index') }}" class="btn btn-secondary btn-icon-split my-3">
+        <a href="{{ route('dashboard.signing-inbox.index') }}" class="btn btn-secondary btn-icon-split my-3">
             <span class="icon text-white-50"><i class="fas fa-arrow-left"></i></span>
             <span class="text">Kembali</span>
         </a>
@@ -165,10 +165,10 @@
 <script>
 (() => {
     // ----- CONFIG: use your public images paths -----
-    const STAMP_GPU = "{{ asset('images/sign-wahyu.png') }}"; // 320x108 px (you provided)
-    const STAMP_GE  = "{{ asset('images/sign-arif.png') }}";  // 268x72 px  (you provided)
+    const STAMP_GPU = "{{ route('dashboard.documents.signature-assets.show', [$document, 'sign-wahyu.png']) }}";
+    const STAMP_GE  = "{{ route('dashboard.documents.signature-assets.show', [$document, 'sign-arif.png']) }}";
 
-    const url = "{{ asset('storage/' . $document->file_path) }}";
+    const url = "{{ route('dashboard.documents.preview', $document) }}";
     const pdfCanvas = document.getElementById('pdfCanvas');
     const pdfCtx = pdfCanvas.getContext('2d');
     const stampContainer = document.getElementById('stampContainer');

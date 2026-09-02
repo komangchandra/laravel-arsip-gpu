@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('document_id')->constrained('documents')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            
+
             // posisi tanda tangan (opsional)
             $table->integer('page_number')->nullable();
             $table->integer('x')->nullable();

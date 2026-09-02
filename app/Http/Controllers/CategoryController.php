@@ -13,6 +13,7 @@ class CategoryController extends Controller
     public function index()
     {
         $categories = Category::all();
+
         return view('dashboard.categories.index', compact('categories'));
     }
 
@@ -31,12 +32,12 @@ class CategoryController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'string|max:255'
+            'description' => 'string|max:255',
         ]);
 
         Category::create([
             'name' => $request->name,
-            'description' => $request->description
+            'description' => $request->description,
         ]);
 
         return redirect()->route('dashboard.categories.index')->with('success', 'Kategori berhasil ditambahkan!');
@@ -65,12 +66,12 @@ class CategoryController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'string|max:255'
+            'description' => 'string|max:255',
         ]);
 
         $category->update([
             'name' => $request->name,
-            'description' => $request->description
+            'description' => $request->description,
         ]);
 
         return redirect()->route('dashboard.categories.index')->with('success', 'Kategori berhasil diupdate!');
@@ -82,6 +83,7 @@ class CategoryController extends Controller
     public function destroy(Category $category)
     {
         $category->delete();
+
         return redirect()->route('dashboard.categories.index')->with('success', 'Kategori berhasil dihapus.');
     }
 }

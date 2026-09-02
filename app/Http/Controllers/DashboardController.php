@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
-use App\Models\DocumentApprovalLog;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
@@ -54,5 +52,4 @@ class DashboardController extends Controller
             'recentActivities'
         ));
     }
-
 }

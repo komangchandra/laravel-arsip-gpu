@@ -86,6 +86,7 @@
                             <th>Judul</th>
                             <th>Kategori</th>
                             <th>Status</th>
+                            <th>Progress Routing</th>
                             <th>Dibuat Oleh</th>
                             <th>Dicek Oleh</th>
                             <th>Sign By</th>
@@ -100,6 +101,7 @@
                             <th>Judul</th>
                             <th>Kategori</th>
                             <th>Status</th>
+                            <th>Progress Routing</th>
                             <th>Dibuat Oleh</th>
                             <th>Dicek Oleh</th>
                             <th>Sign By</th>
@@ -124,14 +126,55 @@
                                         'uploaded' => 'secondary',
                                         'needs_revision' => 'danger',
                                         'ready_to_sign' => 'info',
+                                        'routing' => 'warning',
+                                        'waiting_for_signatures' => 'warning',
                                         'signed' => 'success',
                                         'archived' => 'primary',
                                     ];
                                 @endphp
 
-                                <span class="badge bg-{{ $colors[$document->status] ?? 'secondary' }} text-white">
-                                    {{ ucfirst(str_replace('_', ' ', $document->status)) }}
+                                <span class="badge bg-{{ $colors[$document->status->value] ?? 'secondary' }} text-white">
+                                    {{ ucfirst(str_replace('_', ' ', $document->status->value)) }}
                                 </span>
+                            </td>
+
+                            <td style="min-width: 220px">
+                                @if ($document->signRoutes->isEmpty())
+                                    <span class="text-muted">Routing belum dibuat</span>
+                                @else
+                                    <div class="mb-2">
+                                        <strong>{{ $document->signRoutes->where('status', \App\Enums\SignRouteStatus::Signed)->count() }}/{{ $document->signRoutes->count() }}</strong>
+                                        penandatangan selesai
+                                    </div>
+                                    @foreach ($document->signRoutes as $signRoute)
+                                        @php
+                                            $routeColors = [
+                                                'pending' => 'secondary',
+                                                'active' => 'warning',
+                                                'signed' => 'success',
+                                                'revision_requested' => 'danger',
+                                                'cancelled' => 'dark',
+                                            ];
+                                        @endphp
+                                        <div class="small mb-1">
+                                            <span class="badge badge-{{ $routeColors[$signRoute->status->value] ?? 'secondary' }}">{{ $signRoute->sequence }}</span>
+                                            {{ $signRoute->signer->name }}
+                                            <span class="badge badge-{{ $routeColors[$signRoute->status->value] ?? 'secondary' }}">
+                                                {{ str_replace('_', ' ', $signRoute->status->value) }}
+                                            </span>
+                                            @if ($signRoute->status === \App\Enums\SignRouteStatus::Active)
+                                                <div class="text-warning">Sedang menunggu tanda tangan</div>
+                                            @elseif ($signRoute->status === \App\Enums\SignRouteStatus::RevisionRequested)
+                                                <div class="text-danger mt-1">{{ $signRoute->notes }}</div>
+                                                @if ($signRoute->revision_requested_at)
+                                                    <div class="text-muted">{{ $signRoute->revision_requested_at->format('d/m/Y H:i') }}</div>
+                                                @endif
+                                            @elseif ($signRoute->signed_at)
+                                                <div class="text-muted">{{ $signRoute->signed_at->format('d/m/Y H:i') }}</div>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                @endif
                             </td>
 
                             <td>{{ $document->creator->name ?? '-' }}</td>
@@ -159,54 +202,66 @@
                             </td>
 
                             <td>
-                                <!-- Tombol lihat file signed -->
-                                <a href="{{ asset('storage/' . $document->file_path) }}" target="_blank" class="btn btn-sm btn-info">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-
-                                <!-- Tombol download -->
-                                <a href="{{ route('dashboard.documents.download', $document->id) }}" class="btn btn-sm btn-success">
-                                    <i class="fas fa-download"></i>
-                                </a>
+                                @can('download', $document)
+                                    <a href="{{ route('dashboard.documents.preview', $document) }}" target="_blank" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>
+                                    <a href="{{ route('dashboard.documents.download', $document) }}" class="btn btn-sm btn-success"><i class="fas fa-download"></i></a>
+                                @endcan
 
                                 <!-- Tombol stampel -->
-                                @role(['super-admin', 'staff'])
+                                @can('stamp', $document)
                                 <a href="{{ route('dashboard.documents.stamp', $document->id) }}" class="btn btn-sm btn-primary">
                                     <i class="fas fa-stamp"></i>
                                 </a>
-                                @endrole
+                                @endcan
+
+                                @if (request()->routeIs('dashboard.full-sign.index', 'dashboard.stamped.index'))
+                                    @can('archive', $document)
+                                        <form action="{{ route('dashboard.documents.archive', $document) }}" method="POST" style="display:inline">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="btn btn-sm btn-dark" title="Arsipkan dokumen"
+                                                onclick="return confirm('Arsipkan dokumen ini?')">
+                                                <i class="fas fa-file-archive"></i>
+                                            </button>
+                                        </form>
+                                    @endcan
+                                @endif
 
                                 <!-- Tombol Sign -->
-                                @role(['super-admin', 'manager', 'ktt', 'sr-staff', 'sr-staff-haul'])
+                                @can('sign', $document)
                                     <a href="{{ route('dashboard.documents.sign', $document->id) }}" class="btn btn-sm btn-primary">
                                         <i class="fas fa-pen"></i>
                                     </a>
-                                @endrole
-
-                                <!-- Tombol Sign tempel -->
-                                @role(['super-admin', 'ktt', 'sr-staff', 'sr-staff-haul'])
-                                    <a href="{{ route('dashboard.documents.sign-tempel', $document->id) }}" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-stamp"></i>
+                                @endcan
+                                @can('signTempel', $document)
+                                    <a href="{{ route('dashboard.documents.sign-tempel', $document) }}" class="btn btn-sm btn-info" title="Sign Tempel">
+                                        <i class="fas fa-signature"></i>
                                     </a>
-                                @endrole
+                                @endcan
+
+                                @can('manageSignRouting', $document)
+                                    <a href="{{ route('dashboard.documents.sign-routing.edit', $document) }}" class="btn btn-sm btn-outline-primary" title="Atur routing tanda tangan">
+                                        <i class="fas fa-route"></i>
+                                    </a>
+                                @endcan
 
                                 <!-- Tombol Annotate -->
-                                @role('super-admin')
+                                @can('annotate', $document)
                                     <a href="{{ route('dashboard.documents.annotate', $document->id) }}" class="btn btn-sm btn-secondary">
                                         <i class="fas fa-pencil-alt"></i>
                                     </a>
-                                @endrole
+                                @endcan
 
                                 <!-- Tombol edit -->
-                                @role(['super-admin', 'staff', 'staff-haul'])
+                                @can('update', $document)
                                     <a href="{{ route('dashboard.documents.edit', $document->id) }}" 
                                     class="btn btn-sm btn-warning">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                @endrole
+                                @endcan
 
                                 <!-- Tombol delete -->
-                                @role('super-admin')
+                                @can('delete', $document)
                                     <form action="{{ route('dashboard.documents.destroy', $document->id) }}" 
                                         method="POST" style="display:inline">
                                         @csrf
@@ -215,12 +270,12 @@
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
-                                @endrole
+                                @endcan
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="text-center">Belum ada dokumen</td>
+                            <td colspan="10" class="text-center">Belum ada dokumen</td>
                         </tr>
                         @endforelse
                     </tbody>
