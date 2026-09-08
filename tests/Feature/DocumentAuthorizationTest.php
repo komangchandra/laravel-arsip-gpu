@@ -70,7 +70,7 @@ it('uses the uploader signer and administrator access matrix', function () {
     expect(Gate::forUser($uploader)->allows('view', $document))->toBeTrue()
         ->and(Gate::forUser($uploader)->allows('download', $document))->toBeTrue()
         ->and(Gate::forUser($uploader)->allows('update', $document))->toBeTrue()
-        ->and(Gate::forUser($uploader)->allows('delete', $document))->toBeTrue()
+        ->and(Gate::forUser($uploader)->allows('delete', $document))->toBeFalse()
         ->and(Gate::forUser($signer)->allows('view', $document))->toBeTrue()
         ->and(Gate::forUser($signer)->allows('download', $document))->toBeTrue()
         ->and(Gate::forUser($signer)->allows('update', $document))->toBeFalse()
@@ -195,23 +195,37 @@ it('allows only the uploader to manage start and cancel routing', function () {
         ->and(Gate::forUser($admin)->allows('manageSignRouting', $document))->toBeFalse();
 });
 
-it('allows super admin to delete a document in any workflow status', function () {
-    $uploader = User::factory()->create();
+it('allows users to delete only their own documents that need revision', function () {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
     $admin = User::factory()->create();
     $admin->assignRole('super-admin');
-    $document = Document::factory()->for($uploader, 'creator')->create([
-        'status' => DocumentStatus::WaitingForSignatures,
-        'routing_started_at' => now(),
+    $revisedDocument = Document::factory()->for($owner, 'creator')->create([
+        'status' => DocumentStatus::NeedsRevision,
+    ]);
+    $uploadedDocument = Document::factory()->for($owner, 'creator')->create([
+        'status' => DocumentStatus::Uploaded,
     ]);
 
-    expect(Gate::forUser($admin)->allows('delete', $document))->toBeTrue()
-        ->and(Gate::forUser($uploader)->allows('delete', $document))->toBeFalse();
+    expect(Gate::forUser($owner)->allows('delete', $revisedDocument))->toBeTrue()
+        ->and(Gate::forUser($owner)->allows('delete', $uploadedDocument))->toBeFalse()
+        ->and(Gate::forUser($other)->allows('delete', $revisedDocument))->toBeFalse()
+        ->and(Gate::forUser($admin)->allows('delete', $revisedDocument))->toBeFalse();
 
-    $this->actingAs($admin)
-        ->delete(route('dashboard.documents.destroy', $document))
+    $this->actingAs($other)
+        ->delete(route('dashboard.documents.destroy', $revisedDocument))
+        ->assertForbidden();
+
+    $this->actingAs($owner)
+        ->delete(route('dashboard.documents.destroy', $uploadedDocument))
+        ->assertForbidden();
+
+    $this->actingAs($owner)
+        ->delete(route('dashboard.documents.destroy', $revisedDocument))
         ->assertRedirect(route('dashboard.documents.index'));
 
-    $this->assertDatabaseMissing('documents', ['id' => $document->id]);
+    $this->assertDatabaseMissing('documents', ['id' => $revisedDocument->id]);
+    $this->assertDatabaseHas('documents', ['id' => $uploadedDocument->id]);
 });
 
 it('shows all document metadata in listings without granting file access', function () {

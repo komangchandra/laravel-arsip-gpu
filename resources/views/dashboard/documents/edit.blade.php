@@ -120,7 +120,8 @@
                             <span class="badge badge-secondary">Dikunci selama routing</span>
                         @endif
                     </label>
-                    <select class="custom-select form-control @error('status') is-invalid @enderror" id="status" name="status" @disabled($document->routing_started_at)>
+                    <input type="hidden" name="status" value="{{ $document->status->value }}">
+                    <select class="custom-select form-control @error('status') is-invalid @enderror" id="status" disabled>
                         <option value="uploaded" {{ $document->status->value === 'uploaded' ? 'selected' : '' }}>
                             Uploaded
                         </option>

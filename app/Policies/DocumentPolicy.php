@@ -33,8 +33,8 @@ class DocumentPolicy
 
     public function delete(User $user, Document $document): bool
     {
-        return $user->hasRole('super-admin')
-            || ($this->isUploader($user, $document) && $document->routing_started_at === null);
+        return $this->isUploader($user, $document)
+            && $document->status === DocumentStatus::NeedsRevision;
     }
 
     public function download(User $user, Document $document): bool
