@@ -91,6 +91,23 @@ it('allows admin engineering to access document files owned by another user', fu
         ->and(Gate::forUser($adminEngineering)->allows('download', $document))->toBeTrue();
 });
 
+it('shows the stamp action to admin engineering for an eligible document owned by another user', function () {
+    $owner = User::factory()->create();
+    $adminEngineering = User::factory()->create([
+        'email' => 'admin.engineering@gorbyputrautama.com',
+    ]);
+    $category = Category::create(['name' => 'Admin engineering stamp', 'description' => '-']);
+    $document = Document::factory()->for($owner, 'creator')->create([
+        'status' => DocumentStatus::Signed,
+        'category_id' => $category->id,
+    ]);
+
+    $this->actingAs($adminEngineering)
+        ->get(route('dashboard.documents.index'))
+        ->assertOk()
+        ->assertSee(route('dashboard.documents.stamp', $document), false);
+});
+
 it('only permits stamping a signed document by an operational role with access', function () {
     $staffUploader = User::factory()->create();
     $staffUploader->assignRole('staff');

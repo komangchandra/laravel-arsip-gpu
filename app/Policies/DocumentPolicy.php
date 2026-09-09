@@ -6,6 +6,7 @@ use App\Enums\DocumentStatus;
 use App\Enums\SignRouteStatus;
 use App\Models\Document;
 use App\Models\User;
+use App\Support\AdminEngineering;
 
 class DocumentPolicy
 {
@@ -49,14 +50,21 @@ class DocumentPolicy
 
     public function stamp(User $user, Document $document): bool
     {
+        if (! in_array($document->status, [
+            DocumentStatus::Signed,
+            DocumentStatus::Stamped,
+        ], true)) {
+            return false;
+        }
+
+        if (AdminEngineering::matches($user)) {
+            return true;
+        }
+
         return $user->hasAnyRole(['super-admin', 'staff'])
             && ($this->isUploader($user, $document)
                 || $this->isAssignedSigner($user, $document)
-                || $user->hasRole('super-admin'))
-            && in_array($document->status, [
-                DocumentStatus::Signed,
-                DocumentStatus::Stamped,
-            ], true);
+                || $user->hasRole('super-admin'));
     }
 
     public function archive(User $user, Document $document): bool
@@ -126,6 +134,6 @@ class DocumentPolicy
             || $this->isUploader($user, $document)
             || $this->isAssignedSigner($user, $document)
             || $user->hasRole('super-admin')
-            || strcasecmp($user->email, 'admin.engineering@gorbyputrautama.com') === 0;
+            || AdminEngineering::matches($user);
     }
 }

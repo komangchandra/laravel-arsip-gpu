@@ -3,13 +3,14 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Support\AdminEngineering;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 class AdminEngineeringPermissionSeeder extends Seeder
 {
-    public const EMAIL = 'admin.engineering@gorbyputrautama.com';
+    public const EMAIL = AdminEngineering::EMAIL;
 
     public function run(): void
     {
@@ -25,6 +26,7 @@ class AdminEngineeringPermissionSeeder extends Seeder
         $user->givePermissionTo([
             Permission::findOrCreate('documents.view', 'web'),
             Permission::findOrCreate('documents.update', 'web'),
+            Permission::findOrCreate('documents.stamp', 'web'),
         ]);
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
