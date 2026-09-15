@@ -7,6 +7,7 @@ use App\Models\DocumentSignRoute;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
@@ -32,8 +33,8 @@ it('redirects guests from every sensitive document endpoint', function (string $
     ['GET', 'dashboard.documents.stamp'],
     ['POST', 'dashboard.documents.stamp.store'],
     ['GET', 'dashboard.documents.sign'],
-    ['GET', 'dashboard.documents.sign-tempel'],
-    ['POST', 'dashboard.documents.sign-tempel.store'],
+    ['GET', 'dashboard.documents.tempel'],
+    ['POST', 'dashboard.documents.tempel.store'],
     ['GET', 'dashboard.documents.sign-routing.edit'],
 ]);
 
@@ -269,10 +270,39 @@ it('shows all document metadata in listings without granting file access', funct
         ->assertForbidden();
 });
 
-it('protects sign tempel and keeps the removed api signing bypass unavailable', function () {
+it('protects the combined tempel route and keeps the removed api signing bypass unavailable', function () {
     $document = Document::factory()->create();
     $user = User::factory()->create();
 
-    $this->actingAs($user)->get(route('dashboard.documents.sign-tempel', $document))->assertForbidden();
+    $this->actingAs($user)->get(route('dashboard.documents.tempel', $document))->assertForbidden();
     $this->actingAs($user)->postJson('/api/documents/'.$document->id.'/sign')->assertNotFound();
+});
+
+it('requires a mapped active ktt signer for the combined tempel route', function () {
+    Role::findOrCreate('ktt', 'web');
+    $document = Document::factory()->create();
+    $ordinaryUser = User::factory()->create();
+    $inactiveKtt = User::factory()->create(['email' => 'ananda.wahyu@gorbyputrautama.com']);
+    $inactiveKtt->assignRole('ktt');
+    $unmappedKtt = User::factory()->create();
+    $unmappedKtt->assignRole('ktt');
+
+    $this->actingAs($ordinaryUser)
+        ->get(route('dashboard.documents.tempel', $document))
+        ->assertForbidden();
+
+    $this->actingAs($inactiveKtt)
+        ->get(route('dashboard.documents.tempel', $document))
+        ->assertForbidden();
+
+    $this->actingAs($unmappedKtt)
+        ->get(route('dashboard.documents.tempel', $document))
+        ->assertForbidden();
+});
+
+it('does not register the separated tempel routes anymore', function () {
+    expect(Route::has('dashboard.documents.sign-tempel'))->toBeFalse()
+        ->and(Route::has('dashboard.documents.sign-tempel.store'))->toBeFalse()
+        ->and(Route::has('dashboard.documents.paraf-tempel'))->toBeFalse()
+        ->and(Route::has('dashboard.documents.paraf-tempel.store'))->toBeFalse();
 });

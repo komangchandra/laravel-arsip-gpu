@@ -60,11 +60,11 @@ Route::middleware('auth')
         Route::post('documents/{document}/sign', [DocumentSignController::class, 'store'])
             ->middleware('throttle:sign-document')
             ->name('documents.sign.store');
-        Route::get('documents/{document}/sign-tempel', [DocumentSignController::class, 'showStamp'])
-            ->name('documents.sign-tempel');
-        Route::post('documents/{document}/sign-tempel', [DocumentSignController::class, 'storeStamp'])
+        Route::get('documents/{document}/tempel', [DocumentSignController::class, 'showTempel'])
+            ->name('documents.tempel');
+        Route::post('documents/{document}/tempel', [DocumentSignController::class, 'storeTempel'])
             ->middleware('throttle:sign-document')
-            ->name('documents.sign-tempel.store');
+            ->name('documents.tempel.store');
         Route::post('documents/{document}/request-revision', [DocumentSignController::class, 'requestRevision'])
             ->name('documents.sign.request-revision');
         Route::get('signing-inbox', [SigningInboxController::class, 'index'])

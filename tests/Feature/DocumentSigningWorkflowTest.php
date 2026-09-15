@@ -81,13 +81,13 @@ it('forbids a signer whose turn has not started', function () {
     $this->actingAs($first)->get(route('dashboard.documents.sign', $document))->assertOk();
 });
 
-it('offers sign tempel only to the active ktt and records it in the routing workflow', function () {
+it('offers Wahyu only his personal assets and records a combined tempel submission', function () {
     Storage::fake('documents');
     Storage::fake('signature-assets');
     Role::findOrCreate('ktt', 'web');
 
     $uploader = User::factory()->create();
-    $ktt = User::factory()->create();
+    $ktt = User::factory()->create(['email' => 'ananda.wahyu@gorbyputrautama.com']);
     $ktt->assignRole('ktt');
     $category = Category::create(['name' => 'Sign tempel', 'description' => '-']);
     $document = Document::factory()->for($uploader, 'creator')->create([
@@ -103,6 +103,9 @@ it('offers sign tempel only to the active ktt and records it in the routing work
     Storage::disk('signature-assets')->put('sign-wahyu.png', base64_decode(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
     ));
+    Storage::disk('signature-assets')->put('paraf-wahyu.png', base64_decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
+    ));
 
     $service = app(DocumentSigningService::class);
     $service->updateRouting($document, $uploader, [$ktt->id]);
@@ -111,13 +114,23 @@ it('offers sign tempel only to the active ktt and records it in the routing work
     $this->actingAs($ktt)
         ->get(route('dashboard.documents.index'))
         ->assertOk()
-        ->assertSee(route('dashboard.documents.sign-tempel', $document), false);
+        ->assertSee(route('dashboard.documents.tempel', $document), false);
 
     $this->actingAs($ktt)
-        ->post(route('dashboard.documents.sign-tempel.store', $document), [
+        ->get(route('dashboard.documents.tempel', $document))
+        ->assertOk()
+        ->assertSee('Tanda Tangan Wahyu')
+        ->assertSee('Paraf Wahyu')
+        ->assertSee('sign-wahyu.png')
+        ->assertSee('paraf-wahyu.png')
+        ->assertDontSee('sign-arif.png')
+        ->assertDontSee('paraf-arif.png');
+
+    $this->actingAs($ktt)
+        ->post(route('dashboard.documents.tempel.store', $document), [
             'stamps' => json_encode([
                 1 => [[
-                    'type' => 'gpu',
+                    'type' => 'sign',
                     'x_ratio' => 0.1,
                     'y_ratio' => 0.1,
                     'width_ratio' => 0.2,
@@ -131,9 +144,120 @@ it('offers sign tempel only to the active ktt and records it in the routing work
     $document->refresh();
     expect($document->status)->toBe(DocumentStatus::Signed)
         ->and($document->signRoutes()->first()->status)->toBe(SignRouteStatus::Signed)
-        ->and($document->signedBy()->whereKey($ktt->id)->exists())->toBeTrue();
+        ->and($document->signedBy()->whereKey($ktt->id)->exists())->toBeTrue()
+        ->and($document->file_path)->toStartWith('documents/tempel-');
     Storage::disk('documents')->assertExists($document->file_path);
     Storage::disk('documents')->assertMissing('documents/original.pdf');
+});
+
+it('offers Arif only his personal assets and accepts sign and paraf in one submission', function () {
+    Storage::fake('documents');
+    Storage::fake('signature-assets');
+    Role::findOrCreate('ktt', 'web');
+
+    $uploader = User::factory()->create();
+    $ktt = User::factory()->create(['email' => 'arif.rahman@gorbyputrautama.com']);
+    $ktt->assignRole('ktt');
+    $category = Category::create(['name' => 'Paraf tempel', 'description' => '-']);
+    $document = Document::factory()->for($uploader, 'creator')->create([
+        'title' => 'KTT Paraf Tempel Document',
+        'category_id' => $category->id,
+        'file_path' => 'documents/original-paraf.pdf',
+    ]);
+
+    Storage::disk('documents')->makeDirectory('documents');
+    $pdf = new FPDF;
+    $pdf->AddPage();
+    $pdf->Output('F', Storage::disk('documents')->path($document->file_path));
+    Storage::disk('signature-assets')->put('sign-arif.png', base64_decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
+    ));
+    Storage::disk('signature-assets')->put('paraf-arif.png', base64_decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
+    ));
+
+    $service = app(DocumentSigningService::class);
+    $service->updateRouting($document, $uploader, [$ktt->id]);
+    $service->start($document);
+
+    $this->actingAs($ktt)
+        ->get(route('dashboard.documents.tempel', $document))
+        ->assertOk()
+        ->assertSee('Tanda Tangan Arif')
+        ->assertSee('Paraf Arif')
+        ->assertSee('sign-arif.png')
+        ->assertSee('paraf-arif.png')
+        ->assertDontSee('sign-wahyu.png')
+        ->assertDontSee('paraf-wahyu.png');
+
+    $this->actingAs($ktt)
+        ->post(route('dashboard.documents.tempel.store', $document), [
+            'stamps' => json_encode([
+                1 => [
+                    [
+                        'type' => 'sign',
+                        'x_ratio' => 0.1,
+                        'y_ratio' => 0.1,
+                        'width_ratio' => 0.1,
+                        'height_ratio' => 0.1,
+                        'rotation' => 10,
+                    ],
+                    [
+                        'type' => 'paraf',
+                        'x_ratio' => 0.4,
+                        'y_ratio' => 0.4,
+                        'width_ratio' => 0.1,
+                        'height_ratio' => 0.1,
+                        'rotation' => 0,
+                    ],
+                ],
+            ]),
+        ])
+        ->assertRedirect(route('dashboard.signing-inbox.index'))
+        ->assertSessionHas('success', 'Tanda tangan atau paraf berhasil diterapkan.');
+
+    $document->refresh();
+    expect($document->status)->toBe(DocumentStatus::Signed)
+        ->and($document->signRoutes()->first()->status)->toBe(SignRouteStatus::Signed)
+        ->and($document->signedBy()->whereKey($ktt->id)->exists())->toBeTrue()
+        ->and($document->file_path)->toStartWith('documents/tempel-');
+    Storage::disk('documents')->assertExists($document->file_path);
+    Storage::disk('documents')->assertMissing('documents/original-paraf.pdf');
+});
+
+it('rejects legacy and foreign asset identifiers without changing the document', function () {
+    Storage::fake('documents');
+    Storage::fake('signature-assets');
+    Role::findOrCreate('ktt', 'web');
+
+    $uploader = User::factory()->create();
+    $ktt = User::factory()->create(['email' => 'ananda.wahyu@gorbyputrautama.com']);
+    $ktt->assignRole('ktt');
+    $document = Document::factory()->for($uploader, 'creator')->create([
+        'file_path' => 'documents/invalid-paraf.pdf',
+    ]);
+    $service = app(DocumentSigningService::class);
+    $service->updateRouting($document, $uploader, [$ktt->id]);
+    $service->start($document);
+
+    $this->actingAs($ktt)
+        ->from(route('dashboard.documents.tempel', $document))
+        ->post(route('dashboard.documents.tempel.store', $document), [
+            'stamps' => json_encode([
+                1 => [[
+                    'type' => 'arif',
+                    'x_ratio' => 0.9,
+                    'y_ratio' => 0.1,
+                    'width_ratio' => 0.2,
+                    'height_ratio' => 0.2,
+                ]],
+            ]),
+        ])
+        ->assertRedirect(route('dashboard.documents.tempel', $document))
+        ->assertSessionHasErrors('stamps.1.0.type');
+
+    expect($document->fresh()->file_path)->toBe('documents/invalid-paraf.pdf')
+        ->and($document->signRoutes()->first()->status)->toBe(SignRouteStatus::Active);
 });
 
 it('lets the uploader monitor an active signing route', function () {

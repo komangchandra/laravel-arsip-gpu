@@ -105,7 +105,8 @@
 @endpush
 
 <div class="container-fluid">
-    <h1 class="h3 mb-4 text-gray-800">Stampel Document: {{ $document->title }}</h1>
+    <h1 class="h3 mb-4 text-gray-800">Tempel Tanda Tangan/Paraf: {{ $document->title }}</h1>
+    <p class="text-muted">Aset milik {{ $assetConfiguration['owner'] }}</p>
 
     <div class="toolbar mb-3">
         <div class="group">
@@ -125,14 +126,14 @@
         </div>
 
         <div class="group ms-2">
-            <button type="button" class="btn btn-info btn-icon-split" id="addStampGpu">
-                <span class="icon text-white-50"><i class="fas fa-stamp"></i></span>
-                <span class="text">Sign Wahyu</span>
+            <button type="button" class="btn btn-info btn-icon-split" id="addSign">
+                <span class="icon text-white-50"><i class="fas fa-signature"></i></span>
+                <span class="text">Tanda Tangan {{ $assetConfiguration['owner'] }}</span>
             </button>
 
-            <button type="button" class="btn btn-info btn-icon-split" id="addStampGe">
-                <span class="icon text-white-50"><i class="fas fa-stamp"></i></span>
-                <span class="text">Sign Arif</span>
+            <button type="button" class="btn btn-outline-info btn-icon-split" id="addParaf">
+                <span class="icon text-info"><i class="fas fa-pen-nib"></i></span>
+                <span class="text">Paraf {{ $assetConfiguration['owner'] }}</span>
             </button>
         </div>
     </div>
@@ -142,7 +143,7 @@
         <div id="stampContainer"></div>
     </div>
 
-    <form id="stampForm" method="POST" action="{{ route('dashboard.documents.sign-tempel.store', $document) }}">
+    <form id="stampForm" method="POST" action="{{ route('dashboard.documents.tempel.store', $document) }}">
         @csrf
         <a href="{{ route('dashboard.signing-inbox.index') }}" class="btn btn-secondary btn-icon-split my-3">
             <span class="icon text-white-50"><i class="fas fa-arrow-left"></i></span>
@@ -150,7 +151,7 @@
         </a>
         <button type="submit" class="btn btn-success btn-icon-split my-3" id="saveBtn">
             <span class="icon text-white-50"><i class="fas fa-save"></i></span>
-            <span class="text">Simpan Sign Tempel</span>
+            <span class="text">Simpan Tanda Tangan/Paraf</span>
         </button>
     </form>
 </div>
@@ -164,9 +165,10 @@
 
 <script>
 (() => {
-    // ----- CONFIG: use your public images paths -----
-    const STAMP_GPU = "{{ route('dashboard.documents.signature-assets.show', [$document, 'sign-wahyu.png']) }}";
-    const STAMP_GE  = "{{ route('dashboard.documents.signature-assets.show', [$document, 'sign-arif.png']) }}";
+    const ASSETS = {
+        sign: @json(route('dashboard.documents.signature-assets.show', [$document, $assetConfiguration['assets']['sign']])),
+        paraf: @json(route('dashboard.documents.signature-assets.show', [$document, $assetConfiguration['assets']['paraf']]))
+    };
 
     const url = "{{ route('dashboard.documents.preview', $document) }}";
     const pdfCanvas = document.getElementById('pdfCanvas');
@@ -236,7 +238,7 @@
         const img = document.createElement('img');
         img.className = 'stamp-img';
         img.draggable = false;
-        img.src = stObj.type === 'gpu' ? STAMP_GPU : STAMP_GE;
+        img.src = ASSETS[stObj.type];
         wrap.appendChild(img);
 
         // rotate handle (top center)
@@ -270,28 +272,41 @@
         });
     }
     function addStamp(type) {
-        ensurePageArray(pageNum);
-        const defaultW = Math.min(160, Math.round(pdfCanvas.width * 0.25));
-        const aspect = (type==='gpu') ? (308/282) : (86/190);
-        const defaultH = Math.round(defaultW * aspect);
+        const source = ASSETS[type];
+        if (!source) return;
 
-        const stObj = {
-            id: 's' + (Date.now()) + '_' + (idCounter++),
-            page: pageNum,
-            type,
-            x: Math.max(10, Math.round((pdfCanvas.width - defaultW) / 2)),
-            y: Math.max(10, Math.round((pdfCanvas.height - defaultH) / 2)),
-            w: defaultW,
-            h: defaultH,
-            rotation: 0
+        const probe = new Image();
+        probe.onload = () => {
+            ensurePageArray(pageNum);
+            const aspect = probe.naturalWidth / probe.naturalHeight;
+            let defaultW = Math.min(140, Math.round(pdfCanvas.width * 0.22));
+            let defaultH = Math.round(defaultW / aspect);
+            const maxHeight = Math.round(pdfCanvas.height * 0.4);
+            if (defaultH > maxHeight) {
+                defaultH = maxHeight;
+                defaultW = Math.round(defaultH * aspect);
+            }
+
+            const stObj = {
+                id: 's' + (Date.now()) + '_' + (idCounter++),
+                page: pageNum,
+                type,
+                x: Math.max(10, Math.round((pdfCanvas.width - defaultW) / 2)),
+                y: Math.max(10, Math.round((pdfCanvas.height - defaultH) / 2)),
+                w: defaultW,
+                h: defaultH,
+                rotation: 0
+            };
+
+            stamps[pageNum].push(stObj);
+            refreshStampsForPage();
+            selectStampById(stObj.id);
         };
-
-        stamps[pageNum].push(stObj);
-        refreshStampsForPage();
-        selectStampById(stObj.id);
+        probe.onerror = () => alert('Gagal memuat aset tanda tangan/paraf.');
+        probe.src = source;
     }
-    document.getElementById('addStampGpu').addEventListener('click', () => addStamp('gpu'));
-    document.getElementById('addStampGe').addEventListener('click', () => addStamp('ge'));
+    document.getElementById('addSign').addEventListener('click', () => addStamp('sign'));
+    document.getElementById('addParaf').addEventListener('click', () => addStamp('paraf'));
     function deselectAll() {
         document.querySelectorAll('.stamp-wrap').forEach(el => el.classList.remove('selected'));
         activeWrapper = null;
@@ -454,13 +469,13 @@
         refreshStampsForPage();
     }
     document.getElementById('deleteSelected').addEventListener('click', () => {
-        if (!activeWrapper) return alert('Pilih stampel terlebih dahulu.');
+        if (!activeWrapper) return alert('Pilih tanda tangan atau paraf terlebih dahulu.');
         const id = activeWrapper.dataset.id;
         const page = parseInt(activeWrapper.dataset.page, 10);
         removeStampById(page, id);
     });
     document.getElementById('clearAll').addEventListener('click', () => {
-        if (!confirm('Hapus semua stampel pada halaman ini?')) return;
+        if (!confirm('Hapus semua tanda tangan dan paraf pada halaman ini?')) return;
         stamps[pageNum] = [];
         refreshStampsForPage();
     });
@@ -550,3 +565,4 @@
 @endpush
 
 @endsection
+

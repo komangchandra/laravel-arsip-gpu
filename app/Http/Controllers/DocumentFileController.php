@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Support\PersonalSignatureAssets;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -43,12 +44,12 @@ class DocumentFileController extends Controller
     public function signatureAsset(Document $document, string $asset): BinaryFileResponse
     {
         $stampAssets = ['stampel-gpu.png', 'stampel-ge.png'];
-        $signAssets = ['sign-wahyu.png', 'sign-arif.png'];
 
         if (in_array($asset, $stampAssets, true)) {
             $this->authorize('stamp', $document);
-        } elseif (in_array($asset, $signAssets, true)) {
-            $this->authorize('signTempel', $document);
+        } elseif (PersonalSignatureAssets::isPersonalAsset($asset)) {
+            $this->authorize('tempelSignature', $document);
+            abort_unless(PersonalSignatureAssets::belongsTo(request()->user(), $asset), 404);
         } else {
             abort(404);
         }

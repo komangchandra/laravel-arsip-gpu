@@ -39,6 +39,8 @@ class MigrateDocumentsToPrivateStorage extends Command
             'old-stampel-ge.png',
             'sign-arif.png',
             'sign-wahyu.png',
+            'paraf-arif.png',
+            'paraf-wahyu.png',
         ] as $asset) {
             if ($this->migratePublicAsset($asset)) {
                 $copied++;

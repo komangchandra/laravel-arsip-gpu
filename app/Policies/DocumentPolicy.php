@@ -7,6 +7,7 @@ use App\Enums\SignRouteStatus;
 use App\Models\Document;
 use App\Models\User;
 use App\Support\AdminEngineering;
+use App\Support\PersonalSignatureAssets;
 
 class DocumentPolicy
 {
@@ -97,9 +98,11 @@ class DocumentPolicy
                 ->exists();
     }
 
-    public function signTempel(User $user, Document $document): bool
+    public function tempelSignature(User $user, Document $document): bool
     {
-        return $user->hasRole('ktt') && $this->sign($user, $document);
+        return $user->hasRole('ktt')
+            && PersonalSignatureAssets::supports($user)
+            && $this->sign($user, $document);
     }
 
     public function startSignRouting(User $user, Document $document): bool

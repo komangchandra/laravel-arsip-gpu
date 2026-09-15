@@ -4,6 +4,7 @@ use App\Models\Document;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -118,4 +119,40 @@ it('does not expose an arbitrary signature asset name', function () {
     $this->actingAs($owner)
         ->get(route('dashboard.documents.signature-assets.show', [$document, 'secret.png']))
         ->assertNotFound();
+});
+
+it('streams only the active ktt personal assets with private headers', function () {
+    Role::findOrCreate('ktt', 'web');
+    $owner = User::factory()->create();
+    $ktt = User::factory()->create(['email' => 'arif.rahman@gorbyputrautama.com']);
+    $ktt->assignRole('ktt');
+    $document = Document::factory()->for($owner, 'creator')->create([
+        'status' => 'waiting_for_signatures',
+        'routing_started_at' => now(),
+    ]);
+    $route = $document->signRoutes()->create([
+        'user_id' => $ktt->id,
+        'created_by' => $owner->id,
+        'sequence' => 1,
+        'status' => 'active',
+        'activated_at' => now(),
+    ]);
+    $document->update(['current_sign_route_id' => $route->id]);
+    Storage::disk('signature-assets')->put('paraf-arif.png', 'png');
+    Storage::disk('signature-assets')->put('paraf-wahyu.png', 'png');
+
+    $this->actingAs($ktt)
+        ->get(route('dashboard.documents.signature-assets.show', [$document, 'paraf-arif.png']))
+        ->assertOk()
+        ->assertHeader('cache-control', 'max-age=0, no-cache, no-store, private')
+        ->assertHeader('x-content-type-options', 'nosniff');
+
+    $this->actingAs($ktt)
+        ->get(route('dashboard.documents.signature-assets.show', [$document, 'paraf-wahyu.png']))
+        ->assertNotFound();
+
+    $unrelated = User::factory()->create();
+    $this->actingAs($unrelated)
+        ->get(route('dashboard.documents.signature-assets.show', [$document, 'paraf-arif.png']))
+        ->assertForbidden();
 });

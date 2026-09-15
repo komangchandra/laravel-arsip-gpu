@@ -233,8 +233,8 @@
                                         <i class="fas fa-pen"></i>
                                     </a>
                                 @endcan
-                                @can('signTempel', $document)
-                                    <a href="{{ route('dashboard.documents.sign-tempel', $document) }}" class="btn btn-sm btn-info" title="Sign Tempel">
+                                @can('tempelSignature', $document)
+                                    <a href="{{ route('dashboard.documents.tempel', $document) }}" class="btn btn-sm btn-info" title="Tempel Tanda Tangan/Paraf">
                                         <i class="fas fa-signature"></i>
                                     </a>
                                 @endcan
