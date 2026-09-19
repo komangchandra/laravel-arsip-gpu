@@ -59,10 +59,15 @@ class DocumentController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
         $this->authorize('create', Document::class);
-        $categories = Category::all();
+        $categories = Category::query()
+            ->when(
+                strcasecmp($request->user()->email, 'didik.arifianto@karimatamultiprima.com') === 0,
+                fn ($query) => $query->where('name', '!=', 'BA Hauling')
+            )
+            ->get();
 
         return view('dashboard.documents.create', compact('categories'));
     }

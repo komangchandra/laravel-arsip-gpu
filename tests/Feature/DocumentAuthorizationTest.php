@@ -92,6 +92,32 @@ it('allows admin engineering to access document files owned by another user', fu
         ->and(Gate::forUser($adminEngineering)->allows('download', $document))->toBeTrue();
 });
 
+it('hides the BA Hauling category from Didik on the document upload form', function () {
+    $didik = User::factory()->create([
+        'email' => 'didik.arifianto@karimatamultiprima.com',
+    ]);
+    $didik->assignRole('staff');
+    $hauling = Category::create(['name' => 'BA Hauling', 'description' => '-']);
+    $otherCategory = Category::create(['name' => 'BA Rental Tambang', 'description' => '-']);
+
+    $this->actingAs($didik)
+        ->get(route('dashboard.documents.create'))
+        ->assertOk()
+        ->assertViewHas('categories', fn ($categories) => ! $categories->contains('id', $hauling->id)
+            && $categories->contains('id', $otherCategory->id));
+});
+
+it('keeps the BA Hauling category visible to other users on the document upload form', function () {
+    $staff = User::factory()->create();
+    $staff->assignRole('staff');
+    $hauling = Category::create(['name' => 'BA Hauling', 'description' => '-']);
+
+    $this->actingAs($staff)
+        ->get(route('dashboard.documents.create'))
+        ->assertOk()
+        ->assertViewHas('categories', fn ($categories) => $categories->contains('id', $hauling->id));
+});
+
 it('shows the stamp action to admin engineering for an eligible document owned by another user', function () {
     $owner = User::factory()->create();
     $adminEngineering = User::factory()->create([
