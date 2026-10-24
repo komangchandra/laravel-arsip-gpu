@@ -239,7 +239,7 @@ it('allows only the uploader to manage start and cancel routing', function () {
         ->and(Gate::forUser($admin)->allows('manageSignRouting', $document))->toBeFalse();
 });
 
-it('allows users to delete only their own documents that need revision', function () {
+it('allows non-admin users to delete only their own documents that need revision', function () {
     $owner = User::factory()->create();
     $other = User::factory()->create();
     $admin = User::factory()->create();
@@ -254,7 +254,7 @@ it('allows users to delete only their own documents that need revision', functio
     expect(Gate::forUser($owner)->allows('delete', $revisedDocument))->toBeTrue()
         ->and(Gate::forUser($owner)->allows('delete', $uploadedDocument))->toBeFalse()
         ->and(Gate::forUser($other)->allows('delete', $revisedDocument))->toBeFalse()
-        ->and(Gate::forUser($admin)->allows('delete', $revisedDocument))->toBeFalse();
+        ->and(Gate::forUser($admin)->allows('delete', $revisedDocument))->toBeTrue();
 
     $this->actingAs($other)
         ->delete(route('dashboard.documents.destroy', $revisedDocument))
@@ -270,6 +270,52 @@ it('allows users to delete only their own documents that need revision', functio
 
     $this->assertDatabaseMissing('documents', ['id' => $revisedDocument->id]);
     $this->assertDatabaseHas('documents', ['id' => $uploadedDocument->id]);
+});
+
+it('allows super admin to delete another users document in every status', function (DocumentStatus $status) {
+    $owner = User::factory()->create();
+    $admin = User::factory()->create();
+    $admin->assignRole('super-admin');
+    $document = Document::factory()->for($owner, 'creator')->create(['status' => $status]);
+
+    expect(Gate::forUser($admin)->allows('delete', $document))->toBeTrue();
+
+    $this->actingAs($admin)
+        ->delete(route('dashboard.documents.destroy', $document))
+        ->assertRedirect(route('dashboard.documents.index'));
+
+    $this->assertDatabaseMissing('documents', ['id' => $document->id]);
+})->with(DocumentStatus::cases());
+
+it('allows super admin to delete a document with an active signing route', function () {
+    $owner = User::factory()->create();
+    $signer = User::factory()->create();
+    $admin = User::factory()->create();
+    $admin->assignRole('super-admin');
+    $document = Document::factory()->for($owner, 'creator')->create([
+        'status' => DocumentStatus::WaitingForSignatures,
+        'routing_started_at' => now(),
+    ]);
+    $signRoute = DocumentSignRoute::create([
+        'document_id' => $document->id,
+        'user_id' => $signer->id,
+        'created_by' => $owner->id,
+        'sequence' => 1,
+        'status' => 'active',
+        'activated_at' => now(),
+    ]);
+    $document->update(['current_sign_route_id' => $signRoute->id]);
+
+    $this->actingAs($owner)
+        ->delete(route('dashboard.documents.destroy', $document))
+        ->assertForbidden();
+
+    $this->actingAs($admin)
+        ->delete(route('dashboard.documents.destroy', $document))
+        ->assertRedirect(route('dashboard.documents.index'));
+
+    $this->assertDatabaseMissing('documents', ['id' => $document->id]);
+    $this->assertDatabaseMissing('document_sign_routes', ['document_id' => $document->id]);
 });
 
 it('shows all document metadata in listings without granting file access', function () {

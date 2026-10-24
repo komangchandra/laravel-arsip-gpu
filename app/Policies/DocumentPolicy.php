@@ -35,8 +35,9 @@ class DocumentPolicy
 
     public function delete(User $user, Document $document): bool
     {
-        return $this->isUploader($user, $document)
-            && $document->status === DocumentStatus::NeedsRevision;
+        return $user->hasRole('super-admin')
+            || ($this->isUploader($user, $document)
+                && $document->status === DocumentStatus::NeedsRevision);
     }
 
     public function download(User $user, Document $document): bool
