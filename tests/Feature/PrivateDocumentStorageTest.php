@@ -38,7 +38,7 @@ it('streams private documents only to authorized users with private headers', fu
     $this->actingAs($owner)
         ->get(route('dashboard.documents.download', $document))
         ->assertOk()
-        ->assertDownload('Confidential_Report.pdf');
+        ->assertDownload('Confidential Report.pdf');
 
     $this->actingAs($unrelated)
         ->get(route('dashboard.documents.download', $document))
@@ -85,7 +85,7 @@ it('allows every authenticated user to preview and download archived documents',
     $this->actingAs($viewer)
         ->get(route('dashboard.documents.download', $document))
         ->assertOk()
-        ->assertDownload('Public_Company_Archive.pdf');
+        ->assertDownload('Public Company Archive.pdf');
 });
 
 it('supports legacy public files only through the authorized controller', function () {

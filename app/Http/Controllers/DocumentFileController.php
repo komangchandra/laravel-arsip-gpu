@@ -86,7 +86,7 @@ class DocumentFileController extends Controller
     private function safeFilename(Document $document): string
     {
         $extension = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION)) ?: 'pdf';
-        $title = preg_replace('/[^A-Za-z0-9._-]+/', '_', $document->title) ?: 'document';
+        $title = preg_replace('/[^A-Za-z0-9 ._-]+/', '_', $document->title) ?: 'document';
 
         return trim($title, '._-').'.'.$extension;
     }
