@@ -146,6 +146,7 @@ it('offers Wahyu only his personal assets and records a combined tempel submissi
         ->and($document->signRoutes()->first()->status)->toBe(SignRouteStatus::Signed)
         ->and($document->signedBy()->whereKey($ktt->id)->exists())->toBeTrue()
         ->and($document->file_path)->toStartWith('documents/tempel-');
+    expect(Document::query()->routingCompleted()->whereKey($document->id)->exists())->toBeTrue();
     Storage::disk('documents')->assertExists($document->file_path);
     Storage::disk('documents')->assertMissing('documents/original.pdf');
 });
@@ -221,6 +222,7 @@ it('offers Arif only his personal assets and accepts sign and paraf in one submi
         ->and($document->signRoutes()->first()->status)->toBe(SignRouteStatus::Signed)
         ->and($document->signedBy()->whereKey($ktt->id)->exists())->toBeTrue()
         ->and($document->file_path)->toStartWith('documents/tempel-');
+    expect(Document::query()->routingCompleted()->whereKey($document->id)->exists())->toBeTrue();
     Storage::disk('documents')->assertExists($document->file_path);
     Storage::disk('documents')->assertMissing('documents/original-paraf.pdf');
 });

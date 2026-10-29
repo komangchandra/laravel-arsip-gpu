@@ -14,15 +14,12 @@ class FullSignController extends Controller
             'category',
             'checkedBy',
             'signedBy',
+            'signRoutes.signer',
         ])->accessibleTo($request->user())
             ->where('status', 'signed')
-            ->whereHas('signedBy', function ($query) {
-                $query->where('email', 'ferry.juanda@gorbyputrautama.com');
-            })
+            ->routingCompleted()
             ->latest()
             ->get();
-
-        // dd($documents);
 
         return view('dashboard.documents.index', compact('documents'));
     }

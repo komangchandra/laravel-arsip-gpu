@@ -31,11 +31,11 @@ class DocumentController extends Controller
             'signRoutes.signer',
         ])
             ->accessibleTo($request->user())
-            ->whereIn('status', ['routing', 'waiting_for_signatures', 'ready_to_sign', 'signed'])
-
-            // ⛔ exclude document yang sudah disign Ferry
-            ->whereDoesntHave('signedBy', function ($q) {
-                $q->where('email', 'ferry.juanda@gorbyputrautama.com');
+            ->where(function ($query) {
+                $query->whereIn('status', ['routing', 'waiting_for_signatures', 'ready_to_sign'])
+                    ->orWhere(function ($signed) {
+                        $signed->where('status', DocumentStatus::Signed)->routingIncomplete();
+                    });
             });
 
         /*

@@ -101,8 +101,7 @@
 
         <script>
             console.log("Created by: Komang Chandra Winata");
-            console.log("chantech.id");
-            console.log("komangchandra.vercel.app");
+            console.log("www.chantech.id");
         </script>
     </body>
 </html>

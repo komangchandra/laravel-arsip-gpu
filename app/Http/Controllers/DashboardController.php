@@ -23,9 +23,11 @@ class DashboardController extends Controller
         | 2. Dokumen yang sudah full sign bulan ini
         |--------------------------------------------------------------------------
         */
-        $fullThisMonth = Document::where('status', 'archived')
-            ->whereMonth('updated_at', now()->month)
-            ->whereYear('updated_at', now()->year)
+        $monthStart = now()->startOfMonth();
+        $fullThisMonth = Document::query()->routingCompleted()
+            ->whereIn('status', ['signed', 'stamped', 'archived'])
+            ->where('signing_completed_at', '>=', $monthStart)
+            ->where('signing_completed_at', '<', $monthStart->copy()->addMonth())
             ->count();
 
         /*

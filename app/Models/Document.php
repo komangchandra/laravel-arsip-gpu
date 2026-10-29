@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\DocumentStatus;
+use App\Enums\SignRouteStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -76,6 +77,20 @@ class Document extends Model
     public function signRoutesCount(): int
     {
         return $this->signRoutes()->count();
+    }
+
+    public function scopeRoutingCompleted(Builder $query): Builder
+    {
+        return $query->whereNotNull('routing_started_at')
+            ->whereNotNull('signing_completed_at')
+            ->whereNull('current_sign_route_id')
+            ->whereHas('signRoutes')
+            ->whereDoesntHave('signRoutes', fn (Builder $routes) => $routes->where('status', '!=', SignRouteStatus::Signed->value));
+    }
+
+    public function scopeRoutingIncomplete(Builder $query): Builder
+    {
+        return $query->whereNotIn('documents.id', self::query()->select('documents.id')->routingCompleted());
     }
 
     public function scopeAccessibleTo(Builder $query, User $user): Builder
