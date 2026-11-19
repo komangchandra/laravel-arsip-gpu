@@ -149,6 +149,67 @@ it('only permits stamping a signed document by an operational role with access',
     expect(Gate::forUser($staffUploader)->allows('stamp', $document->fresh()))->toBeFalse();
 });
 
+it('only allows staff haul to stamp their own documents in eligible statuses', function (DocumentStatus $status) {
+    $uploader = User::factory()->create();
+    $uploader->assignRole('staff-haul');
+    $category = Category::create(['name' => 'Staff haul stamp', 'description' => '-']);
+    $document = Document::factory()->for($uploader, 'creator')->create([
+        'status' => $status,
+        'category_id' => $category->id,
+    ]);
+    $eligible = in_array($status, [DocumentStatus::Signed, DocumentStatus::Stamped], true);
+
+    expect(Gate::forUser($uploader)->allows('stamp', $document))->toBe($eligible);
+
+    $this->actingAs($uploader);
+
+    if ($eligible) {
+        $this->get(route('dashboard.documents.stamp', $document))->assertOk();
+        $this->from(route('dashboard.documents.stamp', $document))
+            ->post(route('dashboard.documents.stamp.store', $document), ['stamps' => ''])
+            ->assertRedirect(route('dashboard.documents.stamp', $document))
+            ->assertSessionHas('error', 'Tidak ada stampel untuk disimpan.');
+        $this->get(route($status === DocumentStatus::Stamped ? 'dashboard.stamped.index' : 'dashboard.documents.index'))
+            ->assertOk()
+            ->assertSee(route('dashboard.documents.stamp', $document), false);
+    } else {
+        $this->get(route('dashboard.documents.stamp', $document))->assertForbidden();
+        $this->post(route('dashboard.documents.stamp.store', $document), ['stamps' => ''])
+            ->assertForbidden();
+    }
+})->with(DocumentStatus::cases());
+
+it('denies staff haul stamping another users document even when assigned as signer', function (DocumentStatus $status, bool $assignedSigner) {
+    $owner = User::factory()->create();
+    $staffHaul = User::factory()->create();
+    $staffHaul->assignRole('staff-haul');
+    $category = Category::create(['name' => 'Other owner stamp', 'description' => '-']);
+    $document = Document::factory()->for($owner, 'creator')->create([
+        'status' => $status,
+        'category_id' => $category->id,
+    ]);
+
+    if ($assignedSigner) {
+        DocumentSignRoute::create([
+            'document_id' => $document->id,
+            'user_id' => $staffHaul->id,
+            'created_by' => $owner->id,
+            'sequence' => 1,
+            'status' => 'signed',
+        ]);
+    }
+
+    expect(Gate::forUser($staffHaul)->allows('stamp', $document))->toBeFalse();
+
+    $this->actingAs($staffHaul)
+        ->get(route('dashboard.documents.stamp', $document))->assertForbidden();
+    $this->post(route('dashboard.documents.stamp.store', $document), ['stamps' => ''])
+        ->assertForbidden();
+    $this->get(route('dashboard.documents.index'))
+        ->assertOk()
+        ->assertDontSee(route('dashboard.documents.stamp', $document), false);
+})->with([DocumentStatus::Signed, DocumentStatus::Stamped])->with([false, true]);
+
 it('allows an authorized operational user to stamp an already stamped document again', function () {
     $staffUploader = User::factory()->create();
     $staffUploader->assignRole('staff');

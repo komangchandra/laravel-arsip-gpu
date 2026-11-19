@@ -63,6 +63,10 @@ class DocumentPolicy
             return true;
         }
 
+        if ($user->hasRole('staff-haul') && $this->isUploader($user, $document)) {
+            return true;
+        }
+
         return $user->hasAnyRole(['super-admin', 'staff'])
             && ($this->isUploader($user, $document)
                 || $this->isAssignedSigner($user, $document)
