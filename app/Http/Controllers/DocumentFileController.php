@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DocumentStatus;
 use App\Models\Document;
 use App\Support\PersonalSignatureAssets;
 use Illuminate\Filesystem\FilesystemAdapter;
@@ -87,8 +88,12 @@ class DocumentFileController extends Controller
     {
         $extension = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION)) ?: 'pdf';
         $title = preg_replace('/[^A-Za-z0-9 ._-]+/', '_', $document->title) ?: 'document';
+        $title = trim($title, '._-');
+        if ($document->status === DocumentStatus::NeedsRevision && ! str_starts_with($title, 'revisi_')) {
+            $title = 'revisi_'.$title;
+        }
 
-        return trim($title, '._-').'.'.$extension;
+        return $title.'.'.$extension;
     }
 
     private function makePrivate(BinaryFileResponse $response): void

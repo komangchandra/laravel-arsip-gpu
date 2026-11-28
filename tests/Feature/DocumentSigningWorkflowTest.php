@@ -37,6 +37,7 @@ it('runs sequential signing and only activates the next signer', function () {
 });
 
 it('permanently stops pending routes when revision is requested', function () {
+    Storage::fake('documents');
     $uploader = User::factory()->create();
     $first = User::factory()->create(['name' => 'Revision Requester']);
     $second = User::factory()->create();
@@ -49,11 +50,22 @@ it('permanently stops pending routes when revision is requested', function () {
     $service->updateRouting($document, $uploader, [$first->id, $second->id]);
     $service->start($document);
 
+    $oldPath = $document->file_path;
+    Storage::disk('documents')->put($oldPath, '%PDF-1.4 revision content');
     $service->requestRevision($document, $first, 'Mohon perbaiki nominal kontrak.');
 
     expect($document->fresh()->status)->toBe(DocumentStatus::NeedsRevision)
+        ->and($document->fresh()->file_path)->toBe('documents/revisi_test.pdf')
         ->and($document->signRoutes()->first()->status)->toBe(SignRouteStatus::RevisionRequested)
         ->and($document->signRoutes()->reorder('sequence', 'desc')->first()->status)->toBe(SignRouteStatus::Cancelled);
+
+    Storage::disk('documents')->assertMissing($oldPath);
+    expect(Storage::disk('documents')->get($document->fresh()->file_path))->toBe('%PDF-1.4 revision content');
+
+    $this->actingAs($uploader)
+        ->get(route('dashboard.documents.download', $document))
+        ->assertOk()
+        ->assertDownload('revisi_Document With Revision Note.pdf');
 
     $this->actingAs($uploader)
         ->get(route('dashboard.revisions.index'))
@@ -342,6 +354,7 @@ it('lets the uploader edit metadata without changing file or workflow after rout
 });
 
 it('lets the uploader mark an active routed document for revision from edit', function () {
+    Storage::fake('documents');
     $uploader = User::factory()->create();
     $signer = User::factory()->create();
     $category = Category::create(['name' => 'Revision action', 'description' => '-']);
@@ -349,6 +362,8 @@ it('lets the uploader mark an active routed document for revision from edit', fu
     $service = app(DocumentSigningService::class);
     $service->updateRouting($document, $uploader, [$signer->id]);
     $service->start($document);
+
+    Storage::disk('documents')->put($document->file_path, '%PDF-1.4 revision');
 
     $this->actingAs($uploader)
         ->put(route('dashboard.documents.update', $document), [
@@ -359,6 +374,26 @@ it('lets the uploader mark an active routed document for revision from edit', fu
         ->assertRedirect(route('dashboard.documents.index'));
 
     expect($document->fresh()->status)->toBe(DocumentStatus::NeedsRevision)
+        ->and($document->fresh()->file_path)->toBe('documents/revisi_test.pdf')
         ->and($document->fresh()->current_sign_route_id)->toBeNull()
         ->and($document->signRoutes()->first()->status)->toBe(SignRouteStatus::Cancelled);
+});
+
+it('preserves existing revision files when renaming a legacy document', function () {
+    Storage::fake('documents');
+    Storage::fake('public');
+    $document = Document::factory()->create(['file_path' => 'documents/legacy.pdf']);
+    Storage::disk('public')->put($document->file_path, 'original');
+    Storage::disk('public')->put('documents/revisi_legacy.pdf', 'existing revision');
+
+    app(DocumentSigningService::class)->updateRevisionDocument($document);
+
+    expect($document->file_path)->toStartWith('documents/revisi_legacy_')
+        ->and(Storage::disk('public')->get($document->file_path))->toBe('original')
+        ->and(Storage::disk('public')->get('documents/revisi_legacy.pdf'))->toBe('existing revision');
+    Storage::disk('public')->assertMissing('documents/legacy.pdf');
+
+    $renamedPath = $document->file_path;
+    app(DocumentSigningService::class)->updateRevisionDocument($document);
+    expect($document->fresh()->file_path)->toBe($renamedPath);
 });

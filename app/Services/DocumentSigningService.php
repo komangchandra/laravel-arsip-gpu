@@ -7,7 +7,10 @@ use App\Enums\SignRouteStatus;
 use App\Models\Document;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class DocumentSigningService
 {
@@ -100,7 +103,7 @@ class DocumentSigningService
                 'notes' => $notes,
             ]);
             $locked->signRoutes()->where('status', SignRouteStatus::Pending)->update(['status' => SignRouteStatus::Cancelled]);
-            $locked->update(['status' => DocumentStatus::NeedsRevision, 'current_sign_route_id' => null]);
+            $this->updateRevisionDocument($locked, ['current_sign_route_id' => null]);
         });
     }
 
@@ -128,10 +131,43 @@ class DocumentSigningService
                 ->whereIn('status', [SignRouteStatus::Pending, SignRouteStatus::Active])
                 ->update(['status' => SignRouteStatus::Cancelled]);
 
-            $locked->update([
-                'status' => DocumentStatus::NeedsRevision,
-                'current_sign_route_id' => null,
-            ]);
+            $this->updateRevisionDocument($locked, ['current_sign_route_id' => null]);
         });
+    }
+
+    public function updateRevisionDocument(Document $document, array $attributes = []): void
+    {
+        $oldPath = $attributes['file_path'] ?? $document->file_path;
+        $disk = Storage::disk('documents');
+        if ($oldPath && ! $disk->exists($oldPath)) {
+            $disk = Storage::disk('public');
+        }
+
+        $newPath = $oldPath;
+        if ($oldPath && $disk->exists($oldPath) && ! str_starts_with(basename($oldPath), 'revisi_')) {
+            $newPath = dirname($oldPath).'/revisi_'.basename($oldPath);
+            if ($disk->exists($newPath)) {
+                $extension = pathinfo($oldPath, PATHINFO_EXTENSION);
+                $newPath = dirname($oldPath).'/revisi_'.pathinfo($oldPath, PATHINFO_FILENAME)
+                    .'_'.Str::uuid().($extension ? '.'.$extension : '');
+            }
+
+            if (! $disk->move($oldPath, $newPath)) {
+                throw new RuntimeException('File gagal diubah namanya untuk revisi.');
+            }
+        }
+
+        try {
+            $document->update(array_merge($attributes, [
+                'status' => DocumentStatus::NeedsRevision,
+                'file_path' => $newPath,
+            ]));
+        } catch (\Throwable $error) {
+            if ($newPath !== $oldPath) {
+                $disk->move($newPath, $oldPath);
+            }
+
+            throw $error;
+        }
     }
 }

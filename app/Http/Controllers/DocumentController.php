@@ -160,7 +160,11 @@ class DocumentController extends Controller
             $updates['status'] = $validated['status'];
         }
 
-        $document->update($updates);
+        if (($updates['status'] ?? null) === DocumentStatus::NeedsRevision->value) {
+            $signingService->updateRevisionDocument($document, $updates);
+        } else {
+            $document->update($updates);
+        }
 
         if ($request->input('action') === 'request_revision') {
             $signingService->markNeedsRevision($document);
